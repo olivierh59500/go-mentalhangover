@@ -1,0 +1,43 @@
+{
+  "DCKVersion": "v1.0.0",
+  "Sources": [
+    {
+      "File": "previous/Scoopex - Mental Hangover - Amiga Demo (HD 50fps).mp4",
+      "Bytes": 101281116,
+      "SHA256": "42cd2d905a85a0a96bb16183d44b0c8ac1d5f449600677351345f3b3eaa98175"
+    },
+    {
+      "File": "previous/Scoopex-MentalHangover.adf",
+      "Bytes": 901120,
+      "SHA256": "d3d57c534f5db368a9e9dd941ae6b9055c00802a66111ca780b06212f6d591fe"
+    },
+    {
+      "File": "previous/madness.mod",
+      "Bytes": 143136,
+      "SHA256": "a64be22f2f10bd8d7005aa7e77b6cc0b8960bdcf931d42d012e817a0bf0f262d"
+    }
+  ],
+  "Video": {
+    "Width": 1280,
+    "Height": 720,
+    "FPS": 50,
+    "Seconds": 465.026032,
+    "AudioSampleRate": 44100,
+    "AudioChannels": 2
+  },
+  "Module": {
+    "Title": "madness took me",
+    "Signature": "M.K.",
+    "Channels": 4,
+    "Orders": 65,
+    "Patterns": 31
+  },
+  "ADF": {
+    "Bytes": 901120,
+    "BlockBytes": 512,
+    "BootSignature": "DOS0",
+    "NominalRootBlock": 880,
+    "DirectoryEntries": 0,
+    "CustomBootLoader": true
+  }
+}
