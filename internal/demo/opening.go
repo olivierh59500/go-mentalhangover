@@ -31,6 +31,7 @@ type Opening struct {
 	signOverlay  *composite.RasterOverlay
 	cards        []*scrolling.Scrolling
 	vectors      []*vectorEffect
+	bobs         *bobEffect
 	unit         int
 	localTick    int
 	musicStarted bool
@@ -137,6 +138,16 @@ func NewOpening(muted bool) (*Opening, error) {
 		}
 		game.vectors = append(game.vectors, vector)
 	}
+	bobData, err := assets.Files.ReadFile("raw/filled-vector.bin")
+	if err != nil {
+		game.Close()
+		return nil, err
+	}
+	game.bobs, err = newBOBEffect(bobData)
+	if err != nil {
+		game.Close()
+		return nil, err
+	}
 	if err := game.prepare(); err != nil {
 		game.Close()
 		return nil, err
@@ -173,6 +184,9 @@ func (game *Opening) prepare() error {
 	}
 	if data.Kind == "sign-raster" {
 		return game.signOverlay.SetPhase(0, -2-float64(game.localTick*20))
+	}
+	if data.Kind == "bobs" {
+		return game.bobs.Update(frame)
 	}
 	if data.Kind == "card" {
 		return game.cards[data.Card].Update(frame)
@@ -230,6 +244,8 @@ func (game *Opening) Draw(dst *ebiten.Image) {
 	case "sign-raster":
 		game.vectors[3].Draw(game.layer)
 		game.signOverlay.Draw(game.layer)
+	case "bobs":
+		game.bobs.Draw(game.layer)
 	}
 	game.palette.Draw(dst, game.layer, game.paletteMode, game.paletteLevel)
 }
@@ -237,6 +253,9 @@ func (game *Opening) Draw(dst *ebiten.Image) {
 func (*Opening) Layout(int, int) (int, int) { return Width, Height }
 
 func (game *Opening) Close() {
+	if game.bobs != nil {
+		game.bobs.Close()
+	}
 	for _, card := range game.cards {
 		card.Close()
 	}

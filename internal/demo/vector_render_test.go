@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	kit "github.com/olivierh59500/democonstructionkit"
 	"github.com/olivierh59500/democonstructionkit/fidelity/ebiten/testutil"
 	"github.com/olivierh59500/go-mentalhangover/assets"
 	"github.com/olivierh59500/go-mentalhangover/internal/source"
@@ -163,6 +164,52 @@ func TestOpeningCardsMatchOriginalIntegerPensAndLineSteps(t *testing.T) {
 		dst.ReadPixels(got)
 		if !bytes.Equal(got, want.Pix) {
 			t.Fatalf("card %s differs from source pen layout", card.Name)
+		}
+	}
+}
+
+func TestBOBFontMappingAndRepeatedDrawKeepClockAndPixels(t *testing.T) {
+	data, _ := assets.Files.ReadFile("raw/filled-vector.bin")
+	effect, err := newBOBEffect(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer effect.Close()
+	dst := ebiten.NewImage(Width, Height)
+	defer dst.Deallocate()
+	for tick := 0; tick < 1350; tick++ {
+		if err := effect.Update(kit.Frame{}); err != nil {
+			t.Fatal(err)
+		}
+		if tick%127 != 0 {
+			continue
+		}
+		clock := effect.clock
+		cursor, distance, angles := clock.cursor, clock.distance, clock.angles
+		want := image.NewNRGBA(image.Rect(0, 0, Width, Height))
+		letters := []rune(clock.data.Text)
+		for i := clock.first; i < clock.fetched; i++ {
+			if letters[i] == ' ' {
+				continue
+			}
+			x := clock.origins[i] - distance
+			draw.Draw(want, image.Rect(x, 15, x+16, 29), clock.data.Font, image.Pt((int(letters[i])-32)*16, 0), draw.Over)
+		}
+		dst.Clear()
+		effect.Draw(dst)
+		pixels := make([]byte, Width*Height*4)
+		dst.ReadPixels(pixels)
+		for y := 15; y < 29; y++ {
+			if !bytes.Equal(pixels[y*Width*4:(y+1)*Width*4], want.Pix[y*Width*4:(y+1)*Width*4]) {
+				t.Fatalf("BOB font pixels differ at update %d row %d", tick, y)
+			}
+		}
+		dst.Clear()
+		effect.Draw(dst)
+		second := make([]byte, len(pixels))
+		dst.ReadPixels(second)
+		if cursor != clock.cursor || distance != clock.distance || angles != clock.angles || !bytes.Equal(pixels, second) {
+			t.Fatal("BOB drawing advances the source clocks", tick)
 		}
 	}
 }

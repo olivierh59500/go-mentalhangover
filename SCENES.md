@@ -1,15 +1,18 @@
 # Reference scene inventory
 
 The supplied recording lasts 465.026 seconds at 50 frames/s. This initial map
-uses fifteen-second observations. Boundaries and names below are provisional;
-the loader, effect routines and denser frame sampling will establish exact cues.
+used sparse observations; it now incorporates exact-frame samples and decoded
+routine counts for the opening and Filled BOBs. Video extraction uses explicit
+frame selection: an fps resampling filter can shift a contact-sheet timestamp
+by half its sampling interval. Later boundaries remain provisional.
 
 | Approximate recording time | Visible production unit | Candidate DCK reuse | Production-specific work |
 | --- | --- | --- | --- |
-| 0–25 s | Winged Scoopex emblem and Mental Hangover title over stars | Projected field, timed image layers | Original bitplanes, palettes and title handoff |
-| 25–70 s | Blue Slayer, Reward and Uncle Tom author objects with lower text | Ordered mesh rendering, bitmap scrolling | Object geometry and authored text/poses |
-| 70–85 s | Large introductory text cards | Bitmap page, timed scene layers | Original font and exact card timings |
-| 85–115 s | Moving multicolor polygon ribbon | Mesh or strip composition | Ribbon geometry, color order and deformation |
+| 0–12 s | Winged Scoopex emblem over stars | Fixed-step sprite field, image layers | Original bitplanes, per-bank palettes and music start |
+| 12–30 s | Presents, title and coded-by cards | Bitmap pages, image layers, cue ranges | RGB12 flash/fades and source-centered lines |
+| 30–70 s | Blue Slayer, Reward and Uncle Tom author objects | Bounded triangle batch, cue clock | Original word-sized projection and cue banks |
+| 70–84 s | Follow the sign, sign raster sweep and Scoopex text card | Bitmap pages, masked raster overlay | Original 27 copper groups and 50-frame sweep |
+| 84–123 s | Filled BOBs: scrolling, repeated cubes and pyramids | Scrolling facade, retained triangle batch | Binary controls, DMA-rounded lookup positions and raster colors |
 | 115–150 s | Filled-vector introduction and rotating shaded object | Solid mesh/materials, timelines | Original face bank, palettes and rotation rules |
 | 150–240 s | Stencil and patterned vector objects, textured panels and cube | Mesh rendering, masks, image layers | Exact stencil/texture rules and object sequence |
 | 240–280 s | Greetings and member text pages over stars | Bitmap pages/scrolling, projected field | Font layout, messages and transitions |
