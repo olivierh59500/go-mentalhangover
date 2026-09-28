@@ -8,9 +8,22 @@ import (
 	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	capture "github.com/olivierh59500/democonstructionkit/fidelity/ebiten"
 	"github.com/olivierh59500/go-mentalhangover/internal/demo"
 )
+
+type desktopHost struct{ *demo.Game }
+
+func (h desktopHost) Update() error {
+	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+		return ebiten.Termination
+	}
+	if inpututil.IsKeyJustPressed(ebiten.KeyF) {
+		ebiten.SetFullscreen(!ebiten.IsFullscreen())
+	}
+	return h.Game.Update()
+}
 
 func main() {
 	muted := flag.Bool("mute", false, "disable original module playback")
@@ -45,8 +58,8 @@ func main() {
 	ebiten.SetTPS(demo.FPS)
 	ebiten.SetWindowSize(demo.Width*3, demo.Height*3)
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
-	ebiten.SetWindowTitle("Mental Hangover / Development reconstruction")
-	if err := ebiten.RunGame(game); err != nil {
+	ebiten.SetWindowTitle("Mental Hangover Go")
+	if err := ebiten.RunGame(desktopHost{game}); err != nil {
 		log.Fatal(err)
 	}
 }

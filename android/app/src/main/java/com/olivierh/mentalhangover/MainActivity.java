@@ -1,6 +1,7 @@
 package com.olivierh.mentalhangover;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
@@ -46,6 +47,15 @@ public final class MainActivity extends Activity {
         ebitenView.requestFocus();
         setContentView(ebitenView);
         hideSystemUi();
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if (intent.hasExtra("mental_verify_tick")) {
+            Mobile.configureVerification(intent.getIntExtra("mental_verify_tick", 0));
+        }
     }
 
     @Override

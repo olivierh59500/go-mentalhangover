@@ -17,8 +17,7 @@ import (
 
 const Width, Height, FPS = 352, 272, 50
 
-// Preview renders verified extracted assets while scene reconstruction proceeds.
-// It is explicitly separate from the complete production's eventual director.
+// Preview provides isolated asset views alongside the complete director.
 type Preview struct {
 	eagle, fontImage *ebiten.Image
 	stars            *sprites.AnimatedField
