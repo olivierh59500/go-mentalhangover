@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"image/png"
 	"log"
 	"os"
 	"path/filepath"
@@ -74,6 +75,26 @@ func run(diskPath, modulePath, output string) error {
 	}
 	if err := os.WriteFile(filepath.Join(output, "resident.bin"), resident, 0644); err != nil {
 		return err
+	}
+	intro, err := source.DecodeRegion(disk, source.Regions[0])
+	if err != nil {
+		return err
+	}
+	eagle, err := source.Eagle(intro, resident)
+	if err != nil {
+		return err
+	}
+	file, err := os.Create(filepath.Join(output, "eagle.png"))
+	if err != nil {
+		return err
+	}
+	encodeErr := png.Encode(file, eagle)
+	closeErr := file.Close()
+	if encodeErr != nil {
+		return encodeErr
+	}
+	if closeErr != nil {
+		return closeErr
 	}
 	manifest, err := json.MarshalIndent(records, "", "  ")
 	if err != nil {
