@@ -1,0 +1,105 @@
+{
+  "Scope": "Native decoded title and original credit-vector components; complete production timeline remains incomplete.",
+  "DCKVersion": "v1.0.0",
+  "OriginalCPUProjectionCases": 44,
+  "ExactProjectionCoordinates": true,
+  "NativeParityMaskCheck": "mental_vector_rendercheck",
+  "NativeCaptureFrames": [
+    0,
+    50,
+    150,
+    300
+  ],
+  "Captures": {
+    "mental-title": [
+      {
+        "Frame": 0,
+        "SHA256": "99271d3fac563f906c8fe84439d8b23d708dd9d1e1e4d60f5a986a0705f8d31d"
+      },
+      {
+        "Frame": 50,
+        "SHA256": "07f8bddc3a82e94c68ae8493a455e8faeeafce8d7500d0830fe00753bb9a1e08"
+      },
+      {
+        "Frame": 150,
+        "SHA256": "c4b6a1e286858fd14f6fea9ac0e00410765ee77e0e200499de1ddcebe9a9c9ba"
+      },
+      {
+        "Frame": 300,
+        "SHA256": "731c89c5e8f1d4fc515ca149313fe066e3e422198b93083342854b91d22fd4d1"
+      }
+    ],
+    "slayer": [
+      {
+        "Frame": 0,
+        "SHA256": "05c7c9e3629c315f3e48e8dbb7cdcdc67ce45f9c4aae85482a53e7e522129549"
+      },
+      {
+        "Frame": 50,
+        "SHA256": "ddfbbf21edbe5e709c9d8f65bfe0d202956dcefa4ee583aa1e8948ad32814aef"
+      },
+      {
+        "Frame": 150,
+        "SHA256": "993f94eb90a6e14e6e259d90d2ccbea4ad945324a8b618d6f3e91b29489f66ce"
+      },
+      {
+        "Frame": 300,
+        "SHA256": "2f54f5741d88a09a6e0808d72e0cc69bb883e459b891a1b6b93e5189b58cd84a"
+      }
+    ],
+    "reward": [
+      {
+        "Frame": 0,
+        "SHA256": "05c7c9e3629c315f3e48e8dbb7cdcdc67ce45f9c4aae85482a53e7e522129549"
+      },
+      {
+        "Frame": 50,
+        "SHA256": "e9daf0d84a860d1b449c3d200a562fd11b8c5541723f981249537048a3f07de7"
+      },
+      {
+        "Frame": 150,
+        "SHA256": "f3fcdd00cf9bd95ef8d5d5dc9acee0f8e253df318a3fc1a966bbd42f337d29ba"
+      },
+      {
+        "Frame": 300,
+        "SHA256": "9652fbabaaa8b22f9ca225f71c8ae135019e4c7f183d9f1913bf193964bda51a"
+      }
+    ],
+    "uncle-tom": [
+      {
+        "Frame": 0,
+        "SHA256": "05c7c9e3629c315f3e48e8dbb7cdcdc67ce45f9c4aae85482a53e7e522129549"
+      },
+      {
+        "Frame": 50,
+        "SHA256": "f082fb492a3a525c77224ea167a9d6cbdba1e44bec1f9ad46114379934041ac4"
+      },
+      {
+        "Frame": 150,
+        "SHA256": "5f31154873f2a3a93439bb0d08ddce6434db58c51d390e9c5221f8ec4f5ccd7a"
+      },
+      {
+        "Frame": 300,
+        "SHA256": "3fe23beea91bfdbbf5574abb001864bdaa4b80676fda320f631c22a6527f7393"
+      }
+    ],
+    "sign": [
+      {
+        "Frame": 0,
+        "SHA256": "05c7c9e3629c315f3e48e8dbb7cdcdc67ce45f9c4aae85482a53e7e522129549"
+      },
+      {
+        "Frame": 50,
+        "SHA256": "1b7fa51c295c9b9aeedbc88c29cda2df21a8ec962b249193f6b159c640f94190"
+      },
+      {
+        "Frame": 150,
+        "SHA256": "c35e654a4941fadee13883903f96c1b1be7623432fcf435c4fe6e8dd07f7ab65"
+      },
+      {
+        "Frame": 300,
+        "SHA256": "7a216ecdd2279a7e5a1c964acb7cc0f5b1f593144ffe3939a3b15c511031568d"
+      }
+    ]
+  }
+}
