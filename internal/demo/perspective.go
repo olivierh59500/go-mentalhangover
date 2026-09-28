@@ -78,22 +78,9 @@ func (e *perspectiveEffect) Draw(dst *ebiten.Image) {
 	// Source point colors use OR, independently of the outline parity mask.
 	e.batch.Options.FillRule = ebiten.FillRuleFillAll
 	e.batch.Begin(view, e.white)
-	for _, p := range c.data.Points {
-		z := (uint16(p.Z) + uint16(c.offset[2])) & 2047
-		factor := int32(263680 / (int(z) + 390))
-		x := int32(int16((uint16(p.X)+uint16(c.offset[0]))&1023) - 512)
-		y := int32(int16((uint16(p.Y)+uint16(c.offset[1]))&511) - 256)
-		px, py := int(int16(x*factor>>9))+176, int(int16(y*factor>>9))+108
-		if px < 0 || px >= Width || py < 8 || py >= 207 {
-			continue
-		}
-		word := uint16(0x68d)
-		if z < 1000 {
-			word = 0xfff
-		} else if z >= 1700 {
-			word = 0x359
-		}
-		e.batch.Rect(float64(px), float64(py), 1, 1, image.Rect(0, 0, 1, 1), source.RGB12(word))
+	colors := [4]uint16{0, 0xfff, 0x68d, 0x359}
+	for _, index := range c.touched {
+		e.batch.Rect(float64(index%Width), float64(index/Width+8), 1, 1, image.Rect(0, 0, 1, 1), source.RGB12(colors[c.pointMasks[index]]))
 	}
 	e.batch.Flush()
 	e.batch.Options.FillRule = ebiten.FillRuleEvenOdd

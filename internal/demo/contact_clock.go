@@ -68,9 +68,15 @@ func (c *contactClock) Step() bool {
 		c.depth += 25
 		c.head--
 	}
-	for c.depth > 3250 {
+	// The first upper-bound comparison includes equality; the inner loop does
+	// not. Keeping that distinction preserves the original sphere queue phase.
+	if c.depth >= 3250 {
 		c.depth -= 25
 		c.head++
+		for c.depth > 3250 {
+			c.depth -= 25
+			c.head++
+		}
 	}
 	c.head = (c.head%130 + 130) % 130
 	for i := range c.poses {

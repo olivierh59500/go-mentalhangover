@@ -11,10 +11,14 @@ type perspectiveClock struct {
 	offset        [3]int16
 	level, border int
 	done          bool
+	pointMasks    [Width * 200]byte
+	touched       []int
 }
 
 func newPerspectiveClock(data source.PerspectiveData) *perspectiveClock {
-	return &perspectiveClock{data: data, local: -1}
+	c := &perspectiveClock{data: data, local: -1, touched: make([]int, 0, len(data.Points))}
+	c.rasterizePoints()
+	return c
 }
 
 func (c *perspectiveClock) Step() bool {
@@ -76,6 +80,37 @@ func (c *perspectiveClock) advancePoints() {
 	c.offset[0] = int16(uint16(c.offset[0]) - 6)
 	c.offset[1] = int16(uint16(c.offset[1]) + 3)
 	c.offset[2] = int16(uint16(c.offset[2]) - 10)
+	c.rasterizePoints()
+}
+
+// The original two point planes combine coincident stars with bitwise OR.
+// Clear only touched pixels and reuse the bounded index list on each update.
+func (c *perspectiveClock) rasterizePoints() {
+	for _, index := range c.touched {
+		c.pointMasks[index] = 0
+	}
+	c.touched = c.touched[:0]
+	for _, p := range c.data.Points {
+		z := (uint16(p.Z) + uint16(c.offset[2])) & 2047
+		factor := int32(263680 / (int(z) + 390))
+		x := int32(int16((uint16(p.X)+uint16(c.offset[0]))&1023) - 512)
+		y := int32(int16((uint16(p.Y)+uint16(c.offset[1]))&511) - 256)
+		px, py := int(int16(x*factor>>9))+176, int(int16(y*factor>>9))+100
+		if px < 0 || px >= Width || py < 0 || py >= 199 {
+			continue
+		}
+		mask := byte(2)
+		if z < 1000 {
+			mask = 1
+		} else if z >= 1700 {
+			mask = 3
+		}
+		index := py*Width + px
+		if c.pointMasks[index] == 0 {
+			c.touched = append(c.touched, index)
+		}
+		c.pointMasks[index] |= mask
+	}
 }
 
 // Perspective outlines use the source's precomputed eleven-row, 280-column

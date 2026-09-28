@@ -19,6 +19,77 @@ import (
 
 func TestMain(m *testing.M) { os.Exit(testutil.RunGPU(m)) }
 
+func TestFinaleGPUFloorMatchesTheIndependentCPUColumnRaster(t *testing.T) {
+	data, _ := assets.Files.ReadFile("raw/checkerboard.bin")
+	decoded, err := source.FinalePart(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	palette, err := newCopperPalette()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer palette.Close()
+	e, err := newFinale(decoded, palette)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer e.Close()
+	dst := ebiten.NewImage(Width, Height)
+	defer dst.Deallocate()
+	for _, tick := range []int{0, 63, 64, 79, 95, 143, 299, 364, 365, 399, 800, 2300} {
+		for e.clock.tick < tick {
+			e.Update(kit.Frame{})
+		}
+		dst.Clear()
+		e.drawFloor(dst)
+		got := make([]byte, Width*Height*4)
+		dst.ReadPixels(got)
+		for y := 0; y < Height; y++ {
+			for x := 0; x < Width; x++ {
+				want := color.NRGBA{}
+				if tick >= 64 && y >= 166 {
+					a, b := e.clock.rowColors(y)
+					word := a
+					if decoded.Columns[(y-138)*48+x/8]>>uint(7-x%8)&1 != 0 {
+						word = b
+					}
+					want = source.RGB12(word)
+					want.A = 255
+				}
+				i := (y*Width + x) * 4
+				if !bytes.Equal(got[i:i+4], []byte{want.R, want.G, want.B, want.A}) {
+					t.Fatalf("floor tick %d pixel %d,%d: GPU %v, CPU %v", tick, x, y, got[i:i+4], want)
+				}
+			}
+		}
+	}
+}
+
+func TestLateSceneDrawsPreserveTheSourceClocksAndPixels(t *testing.T) {
+	game, err := NewGame(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer game.Close()
+	dst := ebiten.NewImage(Width, Height)
+	defer dst.Deallocate()
+	for _, tick := range []int{17794, 18150, 18700, 19038, 19400, 20200, 21493, 22000, 23800} {
+		if err := game.FastForward(tick); err != nil {
+			t.Fatal(err)
+		}
+		game.Draw(dst)
+		a := make([]byte, Width*Height*4)
+		dst.ReadPixels(a)
+		game.Draw(dst)
+		b := make([]byte, len(a))
+		dst.ReadPixels(b)
+		if game.clock.Tick() != tick || !bytes.Equal(a, b) {
+			t.Fatal("late-scene drawing changed clock or pixels", tick)
+		}
+	}
+}
+
 func TestVectorBatchUsesOneEvenOddFillForConcaveContoursAndHoles(t *testing.T) {
 	// The outer L shape and inner rectangle share the source's single mask.
 	model := source.VectorModel{Points: []source.Point2{{2, 2}, {22, 2}, {22, 8}, {10, 8}, {10, 22}, {2, 22},

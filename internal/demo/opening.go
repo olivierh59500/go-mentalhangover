@@ -246,7 +246,11 @@ func NewGame(muted bool) (*Game, error) {
 		game.Close()
 		return nil, err
 	}
-	game.finale = newFinale(ending, game.palette)
+	game.finale, err = newFinale(ending, game.palette)
+	if err != nil {
+		game.Close()
+		return nil, err
+	}
 	if err := game.prepare(); err != nil {
 		game.Close()
 		return nil, err
