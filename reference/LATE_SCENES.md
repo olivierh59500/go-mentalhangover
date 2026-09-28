@@ -41,6 +41,7 @@ cycles. Repeated draws of all late units preserve their clocks and pixels.
 Pure checks also cover 8,000 ending updates. A complete initial Pixel 10a run
 reached the indefinite ending with audio active and approximately 50 TPS.
 
-Whole-production video alignment and the updated Android build's final checks
-remain in progress. The conversion preserves source data and integer motion;
-it does not claim a cycle-accurate recreation of the original Amiga blitter.
+The loading/reminder holds are now aligned to exact-frame recording samples.
+The updated Android build also renders the optimized ending at approximately
+50 TPS. [Whole-production checks and fidelity limits](VERIFICATION.md) document
+the native GPU rendering and the measured music timing difference.
