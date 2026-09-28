@@ -6,11 +6,13 @@ import (
 	"bytes"
 	"image"
 	"image/color"
+	"image/draw"
 	"os"
 	"testing"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/olivierh59500/democonstructionkit/fidelity/ebiten/testutil"
+	"github.com/olivierh59500/go-mentalhangover/assets"
 	"github.com/olivierh59500/go-mentalhangover/internal/source"
 )
 
@@ -112,6 +114,55 @@ func TestOpeningRepeatedDrawPreservesClockAndVectorPose(t *testing.T) {
 		dst.ReadPixels(b)
 		if clock != game.clock.Tick() || local != game.localTick || state != game.vectors[0].clock.state || !bytes.Equal(a, b) {
 			t.Fatal("drawing changes source timeline or pixels", tick)
+		}
+	}
+}
+
+func TestOpeningCardsMatchOriginalIntegerPensAndLineSteps(t *testing.T) {
+	game, err := NewOpening(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer game.Close()
+	resident, _ := assets.Files.ReadFile("raw/resident.bin")
+	authors, _ := assets.Files.ReadFile("raw/authors-ribbon.bin")
+	font, advances, err := source.SerifFont(resident)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cards, err := source.AuthorCards(authors)
+	if err != nil {
+		t.Fatal(err)
+	}
+	interludes, err := source.ResidentCards(resident)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cards = append(cards, interludes...)
+	dst := ebiten.NewImage(Width, Height)
+	defer dst.Deallocate()
+	for i, card := range cards {
+		want := image.NewNRGBA(image.Rect(0, 0, Width, Height))
+		for row, line := range card.Lines {
+			width := 0
+			for _, letter := range line {
+				width += advances[int(letter)-32]
+			}
+			x, y := 176-width/2, card.Y+row*24
+			for _, letter := range line {
+				index := int(letter) - 32
+				if letter != ' ' {
+					draw.Draw(want, image.Rect(x, y, x+48, y+23), font, image.Pt(index*48, 0), draw.Over)
+				}
+				x += advances[index]
+			}
+		}
+		dst.Clear()
+		game.cards[i].Draw(dst)
+		got := make([]byte, len(want.Pix))
+		dst.ReadPixels(got)
+		if !bytes.Equal(got, want.Pix) {
+			t.Fatalf("card %s differs from source pen layout", card.Name)
 		}
 	}
 }

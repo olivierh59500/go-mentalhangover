@@ -21,6 +21,18 @@ func TestOriginalCardsRetainBlankLinesAndVerticalOrigins(t *testing.T) {
 	}
 }
 
+func TestResidentInterludesRetainAuthoredLines(t *testing.T) {
+	data, _ := assets.Files.ReadFile("raw/resident.bin")
+	cards, err := source.ResidentCards(data)
+	if err != nil || len(cards) != 4 {
+		t.Fatal("resident interludes missing", err)
+	}
+	if cards[0].Y != 60 || !reflect.DeepEqual(cards[0].Lines,
+		[]string{"THIS ISN'T", "A FUCKING", "MEGADEMO", "", "THIS IS A", "SCOOPEX DEMO"}) {
+		t.Fatal("original interlude spacing changed", cards[0])
+	}
+}
+
 func TestCopperPaletteUsesNibbleTruncationAndBoundarySamples(t *testing.T) {
 	word := uint16(0x4ad)
 	if source.PaletteWord(word, source.PaletteFromWhite, 0) != 0xfff ||

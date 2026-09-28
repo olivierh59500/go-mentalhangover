@@ -58,6 +58,26 @@ func AuthorCards(data []byte) ([]TextCard, error) {
 	return cards, nil
 }
 
+// ResidentCards are the full-screen interludes between loaded effect segments.
+func ResidentCards(data []byte) ([]TextCard, error) {
+	definitions := []struct {
+		name    string
+		address uint32
+	}{
+		{"scoopex-demo", 0x7ad6}, {"filled-vectors", 0x7b10},
+		{"stencil-vectors", 0x7b3a}, {"always-remember", 0x7b66},
+	}
+	var cards []TextCard
+	for _, definition := range definitions {
+		card, err := ReadTextCard(data, 0x21e, definition.address, definition.name)
+		if err != nil {
+			return nil, err
+		}
+		cards = append(cards, card)
+	}
+	return cards, nil
+}
+
 // PaletteMode identifies source copper operations, not generic alpha fades.
 type PaletteMode uint8
 

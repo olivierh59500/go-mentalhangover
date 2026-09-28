@@ -8,6 +8,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	kit "github.com/olivierh59500/democonstructionkit"
+	"github.com/olivierh59500/democonstructionkit/composite"
 	"github.com/olivierh59500/democonstructionkit/render"
 	"github.com/olivierh59500/democonstructionkit/scrolling"
 	"github.com/olivierh59500/democonstructionkit/sound"
@@ -26,6 +27,8 @@ type Opening struct {
 	shared       *Preview
 	palette      *copperPalette
 	layer, title *ebiten.Image
+	signRaster   *ebiten.Image
+	signOverlay  *composite.RasterOverlay
 	cards        []*scrolling.Scrolling
 	vectors      []*vectorEffect
 	unit         int
@@ -71,6 +74,19 @@ func NewOpening(muted bool) (*Opening, error) {
 		return nil, err
 	}
 	game.title = ebiten.NewImageFromImage(pixels)
+	pixels, err = source.SignRaster(data)
+	if err != nil {
+		game.Close()
+		return nil, err
+	}
+	game.signRaster = ebiten.NewImageFromImage(pixels)
+	game.signOverlay, err = composite.NewRasterOverlay(composite.RasterOverlayConfig{
+		Image: game.signRaster, ScaleX: Width, ScaleY: 1, Alpha: 1,
+		Blend: ebiten.BlendSourceAtop, Filter: ebiten.FilterNearest})
+	if err != nil {
+		game.Close()
+		return nil, err
+	}
 	resident, _ := assets.Files.ReadFile("raw/resident.bin")
 	atlas, fontImage, err := serifAtlas(resident)
 	if err != nil {
@@ -87,9 +103,15 @@ func NewOpening(muted bool) (*Opening, error) {
 		game.Close()
 		return nil, err
 	}
+	interludes, err := source.ResidentCards(resident)
+	if err != nil {
+		game.Close()
+		return nil, err
+	}
+	cardData = append(cardData, interludes...)
 	for _, card := range cardData {
 		text, err := scrolling.New(scrolling.Config{Fonts: map[string]scrolling.Face{"default": atlas.Face()},
-			Text: strings.Join(card.Lines, "\n"), Y: float64(card.Y),
+			Text: strings.Join(card.Lines, "\n"), Y: float64(card.Y), Vertical: true,
 			Map: func(sample scrolling.Sample, options *ebiten.DrawImageOptions) bool {
 				// The original center divides a positive word before subtracting.
 				options.GeoM.Translate(math.Ceil(sample.X)-sample.X, 0)
@@ -149,6 +171,9 @@ func (game *Opening) prepare() error {
 			return err
 		}
 	}
+	if data.Kind == "sign-raster" {
+		return game.signOverlay.SetPhase(0, -2-float64(game.localTick*20))
+	}
 	if data.Kind == "card" {
 		return game.cards[data.Card].Update(frame)
 	}
@@ -202,6 +227,9 @@ func (game *Opening) Draw(dst *ebiten.Image) {
 		game.cards[data.Card].Draw(game.layer)
 	case "vector":
 		game.vectors[data.Model].Draw(game.layer)
+	case "sign-raster":
+		game.vectors[3].Draw(game.layer)
+		game.signOverlay.Draw(game.layer)
 	}
 	game.palette.Draw(dst, game.layer, game.paletteMode, game.paletteLevel)
 }
@@ -220,6 +248,9 @@ func (game *Opening) Close() {
 	}
 	if game.title != nil {
 		game.title.Deallocate()
+	}
+	if game.signRaster != nil {
+		game.signRaster.Deallocate()
 	}
 	if game.palette != nil {
 		game.palette.Close()

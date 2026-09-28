@@ -42,6 +42,10 @@ func openingProgram(models []source.VectorModel) ([]openingUnit, *timeline.CueRa
 		}
 		appendUnit(models[i].Name, "vector", frames, 0, i, 0)
 	}
+	appendUnit("sign-raster", "sign-raster", 50, 0, 3, 0)
+	// This interlude includes a disk-load hold. Its duration is anchored to the
+	// supplied recording; the flash and fade keep their original frame counts.
+	appendUnit("scoopex-demo", "card", 245, 7, 0, 180)
 	ranges := make([]timeline.CueRange, len(units))
 	for i, unit := range units {
 		ranges[i] = timeline.CueRange{Start: float64(unit.Start), End: float64(unit.Start + unit.Frames)}
