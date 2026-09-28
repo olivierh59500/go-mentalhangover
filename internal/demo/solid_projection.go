@@ -48,7 +48,7 @@ func projectBOB(points []source.Point3, matrix [9]int16, depth int16, output []s
 			}
 			return int16(quotient)
 		}
-		output[i] = source.Point2{int16(uint16(divide(px)) + 15), int16(uint16(divide(py)) + 14)}
+		output[i] = source.Point2{X: int16(uint16(divide(px)) + 15), Y: int16(uint16(divide(py)) + 14)}
 	}
 	return nil
 }
