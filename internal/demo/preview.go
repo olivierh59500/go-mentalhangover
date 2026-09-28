@@ -56,7 +56,7 @@ func NewPreview(page, muted bool) (*Preview, error) {
 	preview.fontImage = image
 	preview.caption, err = scrolling.New(scrolling.Config{
 		Fonts: map[string]scrolling.Face{"default": atlas.Face()},
-		Text:  "MENTAL HANGOVER\nSCOOPEX DEMO", Y: 110,
+		Text:  "THIS IS A\nSCOOPEX DEMO", Y: 110,
 		Page: &scrolling.PageConfig{Width: Width, LineHeight: 32, Align: scrolling.AlignCenter},
 	})
 	if err != nil {
