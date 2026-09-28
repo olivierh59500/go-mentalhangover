@@ -35,6 +35,7 @@ type Opening struct {
 	solids       []*filledSolidEffect
 	patterns     []*patternedEffect
 	starPages    *starPageEffect
+	circle       *circleEffect
 	unit         int
 	localTick    int
 	musicStarted bool
@@ -192,6 +193,21 @@ func NewOpening(muted bool) (*Opening, error) {
 		game.Close()
 		return nil, err
 	}
+	circleData, err := assets.Files.ReadFile("raw/greetings.bin")
+	if err != nil {
+		game.Close()
+		return nil, err
+	}
+	curve, err := source.CirclePart(circleData)
+	if err != nil {
+		game.Close()
+		return nil, err
+	}
+	game.circle, err = newCircle(curve, game.palette)
+	if err != nil {
+		game.Close()
+		return nil, err
+	}
 	if err := game.prepare(); err != nil {
 		game.Close()
 		return nil, err
@@ -244,6 +260,9 @@ func (game *Opening) prepare() error {
 	}
 	if data.Kind == "star-pages" {
 		return game.starPages.Update(frame)
+	}
+	if data.Kind == "circle" {
+		return game.circle.Update(frame)
 	}
 	if data.Kind == "card" {
 		return game.cards[data.Card].Update(frame)
@@ -312,6 +331,8 @@ func (game *Opening) Draw(dst *ebiten.Image) {
 		game.patterns[data.Model].Draw(game.layer)
 	case "star-pages":
 		game.starPages.Draw(game.layer)
+	case "circle":
+		game.circle.Draw(game.layer)
 	}
 	game.palette.Draw(dst, game.layer, game.paletteMode, game.paletteLevel)
 }
@@ -319,6 +340,9 @@ func (game *Opening) Draw(dst *ebiten.Image) {
 func (*Opening) Layout(int, int) (int, int) { return Width, Height }
 
 func (game *Opening) Close() {
+	if game.circle != nil {
+		game.circle.Close()
+	}
 	if game.starPages != nil {
 		game.starPages.Close()
 	}

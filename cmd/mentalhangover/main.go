@@ -15,7 +15,7 @@ import (
 func main() {
 	muted := flag.Bool("mute", false, "disable original module playback")
 	directory := flag.String("capture", "", "write deterministic native screenshots")
-	frames := flag.String("frames", "0,130,160,300,590,650,800,950,1120,1280,1380,1650,1850,2120,2400,2760,3000,3500,3800", "capture ticks at 50 Hz")
+	frames := flag.String("frames", "0,160,650,800,1120,1650,2400,3000,3800,4040,4800,5200,5800,6300,6700,7200,8100,8800,9500,10100,10500,11500,12100,12600,12900,13800,14800,15600,17000,17600", "capture ticks at 50 Hz")
 	flag.Parse()
 	if *directory != "" {
 		var checkpoints []int

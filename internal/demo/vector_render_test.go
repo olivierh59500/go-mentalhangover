@@ -293,3 +293,52 @@ func TestGreetingDrawUsesCachedPagesAndDoesNotAdvanceSteering(t *testing.T) {
 		}
 	}
 }
+
+func TestCircleOutlineDrawKeepsAuthoredProfilesAndMountainOcclusion(t *testing.T) {
+	data, _ := assets.Files.ReadFile("raw/greetings.bin")
+	curve, err := source.CirclePart(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	palette, err := newCopperPalette()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer palette.Close()
+	effect, err := newCircle(curve, palette)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer effect.Close()
+	dst := ebiten.NewImage(Width, Height)
+	defer dst.Deallocate()
+	for tick := 0; tick < 2600; tick++ {
+		effect.Update(kit.Frame{})
+		if tick%193 != 0 {
+			continue
+		}
+		clock := *effect.clock
+		dst.Clear()
+		effect.Draw(dst)
+		a := make([]byte, Width*Height*4)
+		dst.ReadPixels(a)
+		for y := 0; y < 200; y++ {
+			for x := 0; x < Width; x++ {
+				if curve.Mountain.NRGBAAt(x, y).A == 0 {
+					continue
+				}
+				pixel := a[((y+8)*Width+x)*4 : ((y+8)*Width+x)*4+4]
+				if !bytes.Equal(pixel, []byte{0, 0, 0, 255}) {
+					t.Fatal("foreground escaped the original mountain mask", tick, x, y)
+				}
+			}
+		}
+		dst.Clear()
+		effect.Draw(dst)
+		b := make([]byte, len(a))
+		dst.ReadPixels(b)
+		if effect.clock.angle != clock.angle || effect.clock.cursor != clock.cursor || effect.clock.rows != clock.rows || effect.clock.radiusPhase != clock.radiusPhase || !bytes.Equal(a, b) {
+			t.Fatal("circle drawing changed the source profile or pixels", tick)
+		}
+	}
+}

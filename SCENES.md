@@ -16,10 +16,11 @@ by half its sampling interval. Later boundaries remain provisional.
 | 123–153 s | Filled-vector introduction, cube and faceted solid | Retained triangle batch, palette atlas, cue clock | Original edge faces, mirrored sine bank and 54-phase rasters |
 | 153–247 s | Stencil interlude, two arrow passes, yellow cube, brown facets, paired boxes, pyramid, hollow frame and color block | Triangle batches with parity masks, repeating materials, cue clocks | Original packed contours, degree table, 128-level depth palette and 25/50 Hz cadences |
 | About 250–285 s | Steered point field with greetings and member text pages | Cached bitmap pages, retained pixel batch | Original reciprocal projection, XOR collisions, steering and separate 32-step palettes |
-| 280–345 s | Circular text over a raster-colored mountain silhouette | Text paths, raster materials and masking | Original circular layout and background bitplanes |
-| 345–375 s | Contact text and moving blue objects/trails | Bitmap pages, projected sprites/histories | Authored positions, sprite bank and choreography |
-| 375–420 s | Perspective blue glyph/object rows and final reminder | Projected geometry/text, timelines | Original font geometry, projection and movement |
-| 420 s onward | Scoopex logo, perspective checkerboard and bouncing balls | Perspective checkerboard, projected balls | Original palettes, logo and exact floor/ball motion |
+| About 287–354 s | Circular text over a raster-colored mountain silhouette | Scrolling facade with outline painter, parity batch, retained image layers | Original byte controls, signed wave addressing, polar lookup and mountain occlusion |
+| About 356–380 s | Contact text and projected blue spheres | Projected sprite batches, held image layers | Authored positions, size bank, steering and hardware text columns |
+| About 382–420 s | Perspective blue text and points | Scrolling outline painter, projected geometry, pixel batch | Original font, perspective lookup and message transport |
+| About 420–430 s | Final reminder card and disk-loading interval | Bitmap pages, cue ranges | Original flash/fades and last loader hold |
+| About 430 s onward | Scoopex logo, perspective checkerboard and bouncing balls | Perspective checkerboard, projected balls | Original palettes, logo and exact floor/ball motion |
 
 The star layer persists through several earlier units. Its simulation and depth
 rules must be established from the original routine instead of selecting an
