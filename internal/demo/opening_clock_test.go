@@ -55,6 +55,6 @@ func TestOpeningRetainsOriginalOperationCountsAndBoundaryOrder(t *testing.T) {
 		}
 	}
 	if _, _, active := program.At(23493); active {
-		t.Fatal("unimplemented next scene counted as completed opening")
+		t.Fatal("initial finale range unexpectedly extends past its boundary")
 	}
 }

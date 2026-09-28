@@ -26,9 +26,9 @@ func main() {
 			}
 			checkpoints = append(checkpoints, tick)
 		}
-		var game *demo.Opening
+		var game *demo.Game
 		err := capture.Run(capture.Config{Directory: *directory, Frames: checkpoints, Width: demo.Width, Height: demo.Height},
-			func() (ebiten.Game, error) { var err error; game, err = demo.NewOpening(true); return game, err })
+			func() (ebiten.Game, error) { var err error; game, err = demo.NewGame(true); return game, err })
 		if game != nil {
 			game.Close()
 		}
@@ -37,7 +37,7 @@ func main() {
 		}
 		return
 	}
-	game, err := demo.NewOpening(*muted)
+	game, err := demo.NewGame(*muted)
 	if err != nil {
 		log.Fatal(err)
 	}

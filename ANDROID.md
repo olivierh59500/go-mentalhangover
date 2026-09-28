@@ -1,0 +1,48 @@
+# Mental Hangover on Android
+
+The mobile host runs the same Go renderer, embedded assets and DCK v1.0.0
+music facade as the desktop command. Its clock remains at the original 50 Hz.
+The fixed 352 by 272 scene is centered with its aspect ratio intact. Android
+provides landscape orientation, immersive display, screen-awake behavior and
+pause/resume handling; production logic remains in Go.
+
+## Build and run
+
+Existing requirements: Go, Java 17, Android SDK 36, NDK r28 and an authorized
+ARM64 device. The script selects Ebitengine/ebitenmobile v2.9.11, AGP 8.10.1
+and the committed Gradle 8.11.1 wrapper. It does not install analysis tools.
+
+```sh
+./scripts/run-android.sh --build-only
+./scripts/run-android.sh
+```
+
+The debug APK is `android/app/build/outputs/apk/debug/app-debug.apk`.
+Generated AARs, APKs, build/cache directories and machine-specific settings are
+excluded locally. The application ID is `com.olivierh.mentalhangover`.
+
+## Device verification
+
+A verification launch can show the demo over a locked screen without
+dismissing the keyguard or changing security settings:
+
+```sh
+adb shell am force-stop com.olivierh.mentalhangover
+adb shell am start -n com.olivierh.mentalhangover/.MainActivity --ei mental_verify_tick 0
+```
+
+Tick zero retains normal music playback and logs scene transitions plus
+TPS/FPS and memory every five seconds. A positive tick up to 30,000 seeks a
+muted reconstruction before continuing at 50 Hz. This provides repeatable
+checks of late scenes without changing normal playback.
+
+```sh
+adb shell am force-stop com.olivierh.mentalhangover
+adb shell am start -n com.olivierh.mentalhangover/.MainActivity --ei mental_verify_tick 22000
+adb logcat -s GoLog:I AndroidRuntime:E
+```
+
+Closing/relaunching the application starts a fresh production. Backgrounding
+suspends both rendering and Ebitengine audio. No touch input is required by
+this linear production. A locked-device runtime check does not establish
+complete visual fidelity; the source/video comparisons are tracked separately.

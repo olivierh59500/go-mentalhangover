@@ -18,9 +18,8 @@ import (
 	"github.com/olivierh59500/go-mentalhangover/internal/source"
 )
 
-// Opening assembles the verified first production units. Later effects extend
-// the director rather than playing the supplied reference movie.
-type Opening struct {
+// Game runs the complete native production with the original PAL clocks.
+type Game struct {
 	units        []openingUnit
 	ranges       *timeline.CueRanges
 	clock        *timeline.CueClock
@@ -48,7 +47,7 @@ type Opening struct {
 	paletteLevel int
 }
 
-func NewOpening(muted bool) (*Opening, error) {
+func NewGame(muted bool) (*Game, error) {
 	data, err := assets.Files.ReadFile("raw/authors-ribbon.bin")
 	if err != nil {
 		return nil, err
@@ -65,7 +64,7 @@ func NewOpening(muted bool) (*Opening, error) {
 	if err != nil {
 		return nil, err
 	}
-	game := &Opening{units: units, ranges: ranges, clock: clock, unit: -1, muted: muted}
+	game := &Game{units: units, ranges: ranges, clock: clock, unit: -1, muted: muted}
 	game.shared, err = NewPreview(false, true)
 	if err != nil {
 		return nil, err
@@ -255,7 +254,7 @@ func NewOpening(muted bool) (*Opening, error) {
 	return game, nil
 }
 
-func (game *Opening) prepare() error {
+func (game *Game) prepare() error {
 	tick := game.clock.Tick()
 	unit, _, active := game.ranges.At(float64(tick))
 	if !active {
@@ -319,7 +318,7 @@ func (game *Opening) prepare() error {
 	return nil
 }
 
-func (game *Opening) Update() error {
+func (game *Game) Update() error {
 	if game.done {
 		return ebiten.Termination
 	}
@@ -345,7 +344,7 @@ func (game *Opening) Update() error {
 	return game.prepare()
 }
 
-func (game *Opening) Draw(dst *ebiten.Image) {
+func (game *Game) Draw(dst *ebiten.Image) {
 	dst.Fill(color.Black)
 	if game.unit < 0 || game.done {
 		return
@@ -392,9 +391,28 @@ func (game *Opening) Draw(dst *ebiten.Image) {
 	game.palette.Draw(dst, game.layer, game.paletteMode, game.paletteLevel)
 }
 
-func (*Opening) Layout(int, int) (int, int) { return Width, Height }
+func (*Game) Layout(int, int) (int, int) { return Width, Height }
 
-func (game *Opening) Close() {
+// Position identifies the active production unit and its PAL tick.
+func (game *Game) Position() (string, int) {
+	return game.units[game.unit].Name, game.clock.Tick()
+}
+
+// FastForward advances a muted verification host without opening an audio device.
+// Normal playback always starts at tick zero.
+func (game *Game) FastForward(tick int) error {
+	if !game.muted || tick < game.clock.Tick() || tick > 30000 {
+		return fmt.Errorf("verification tick must advance a muted host within 0..30000")
+	}
+	for game.clock.Tick() < tick {
+		if err := game.Update(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (game *Game) Close() {
 	if game.finale != nil {
 		game.finale.Close()
 	}

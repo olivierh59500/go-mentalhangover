@@ -89,7 +89,7 @@ func TestCopperShaderMatchesAllOriginalNibbles(t *testing.T) {
 }
 
 func TestOpeningRepeatedDrawPreservesClockAndVectorPose(t *testing.T) {
-	game, err := NewOpening(true)
+	game, err := NewGame(true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +120,7 @@ func TestOpeningRepeatedDrawPreservesClockAndVectorPose(t *testing.T) {
 }
 
 func TestOpeningCardsMatchOriginalIntegerPensAndLineSteps(t *testing.T) {
-	game, err := NewOpening(true)
+	game, err := NewGame(true)
 	if err != nil {
 		t.Fatal(err)
 	}
