@@ -3,6 +3,7 @@
 package demo
 
 import (
+	"bytes"
 	"image"
 	"image/color"
 	"os"
@@ -44,6 +45,73 @@ func TestVectorBatchUsesOneEvenOddFillForConcaveContoursAndHoles(t *testing.T) {
 			if got != want {
 				t.Fatalf("parity mask differs at %d,%d: want %t, got %t", x, y, want, got)
 			}
+		}
+	}
+}
+
+func TestCopperShaderMatchesAllOriginalNibbles(t *testing.T) {
+	src, dst := ebiten.NewImage(64, 64), ebiten.NewImage(64, 64)
+	defer src.Deallocate()
+	defer dst.Deallocate()
+	pixels := image.NewNRGBA(image.Rect(0, 0, 64, 64))
+	for i := 1; i < 4096; i++ {
+		pixels.SetNRGBA(i%64, i/64, source.RGB12(uint16(i)))
+	}
+	src.WritePixels(pixels.Pix)
+	palette, err := newCopperPalette()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer palette.Close()
+	for _, mode := range []source.PaletteMode{source.PaletteGray, source.PaletteFromWhite, source.PaletteToBlack} {
+		for _, level := range []int{0, 1, 7, 15, 16, 31, 32} {
+			if mode != source.PaletteFromWhite && level > 16 {
+				continue
+			}
+			dst.Clear()
+			palette.Draw(dst, src, mode, level)
+			got := make([]byte, len(pixels.Pix))
+			dst.ReadPixels(got)
+			for i := 0; i < 4096; i++ {
+				want := color.NRGBA{}
+				if i != 0 {
+					want = source.RGB12(source.PaletteWord(uint16(i), mode, level))
+				}
+				if !bytes.Equal(got[i*4:i*4+4], []byte{want.R, want.G, want.B, want.A}) {
+					t.Fatalf("palette mode %d level %d color %03x: %v != %v", mode, level, i, got[i*4:i*4+4], want)
+				}
+			}
+		}
+	}
+}
+
+func TestOpeningRepeatedDrawPreservesClockAndVectorPose(t *testing.T) {
+	game, err := NewOpening(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer game.Close()
+	dst := ebiten.NewImage(Width, Height)
+	defer dst.Deallocate()
+	for tick := 0; tick < 1700; tick++ {
+		if tick > 0 {
+			if err := game.Update(); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if tick%137 != 0 {
+			continue
+		}
+		clock, local := game.clock.Tick(), game.localTick
+		state := game.vectors[0].clock.state
+		game.Draw(dst)
+		a := make([]byte, Width*Height*4)
+		dst.ReadPixels(a)
+		game.Draw(dst)
+		b := make([]byte, len(a))
+		dst.ReadPixels(b)
+		if clock != game.clock.Tick() || local != game.localTick || state != game.vectors[0].clock.state || !bytes.Equal(a, b) {
+			t.Fatal("drawing changes source timeline or pixels", tick)
 		}
 	}
 }

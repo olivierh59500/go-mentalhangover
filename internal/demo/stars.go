@@ -21,13 +21,13 @@ func originalStars(resident []byte) (*sprites.AnimatedField, []*ebiten.Image, er
 	}
 	positions := make([]motion.FrameParticle, 135)
 	var images []*ebiten.Image
-	palette := []uint16{0, 0x227, 0x449, 0x338}
+	palettes := [3][]uint16{{0, 0x227, 0x449, 0x338}, {0, 0x116, 0x338, 0x227}, {0, 0x005, 0x227, 0x116}}
 	for bank := 0; bank < 3; bank++ {
 		for i := 0; i < 45; i++ {
 			header := resident[start+bank*0x16c+i*8:]
 			position, control := binary.BigEndian.Uint16(header), binary.BigEndian.Uint16(header[2:])
 			pixels, err := source.DecodePlanar(header[4:8], source.Planar{Width: 16, Height: 1, RowStride: 2,
-				PlaneOffsets: []int{0, 2}, Palette: palette, TransparentZero: true})
+				PlaneOffsets: []int{0, 2}, Palette: palettes[bank], TransparentZero: true})
 			if err != nil {
 				return nil, nil, err
 			}
