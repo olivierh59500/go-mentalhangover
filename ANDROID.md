@@ -27,20 +27,19 @@ A verification launch can show the demo over a locked screen without
 dismissing the keyguard or changing security settings:
 
 ```sh
-adb shell am force-stop com.olivierh.mentalhangover
-adb shell am start -n com.olivierh.mentalhangover/.MainActivity --ei mental_verify_tick 0
+adb shell am start -S -W -n com.olivierh.mentalhangover/.MainActivity --ei mental_verify_tick 0
 ```
 
 Tick zero retains normal music playback and logs scene transitions plus
 TPS/FPS and memory every five seconds. A positive tick up to 30,000 seeks a
 muted reconstruction before continuing at 50 Hz. This provides repeatable
 checks of late scenes without changing normal playback.
-Verification requests apply at startup. Always force-stop before selecting a
-different checkpoint; resuming an existing activity preserves its scene clock.
+Verification requests apply at startup. The `-S` option stops the existing
+process before selecting a different checkpoint; `-W` waits for the launch.
+Resuming an existing activity preserves its scene clock.
 
 ```sh
-adb shell am force-stop com.olivierh.mentalhangover
-adb shell am start -n com.olivierh.mentalhangover/.MainActivity --ei mental_verify_tick 22000
+adb shell am start -S -W -n com.olivierh.mentalhangover/.MainActivity --ei mental_verify_tick 22000
 adb logcat -s GoLog:I AndroidRuntime:E
 ```
 

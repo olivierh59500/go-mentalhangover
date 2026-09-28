@@ -94,5 +94,4 @@ fi
 echo "Installing Mental Hangover..."
 "$adb_path" install -r "$apk_path"
 echo "Launching Mental Hangover..."
-"$adb_path" shell am force-stop com.olivierh.mentalhangover
-"$adb_path" shell am start -n com.olivierh.mentalhangover/.MainActivity
+"$adb_path" shell am start -S -W -n com.olivierh.mentalhangover/.MainActivity
