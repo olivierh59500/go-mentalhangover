@@ -61,15 +61,17 @@ func openingProgram(models []source.VectorModel) ([]openingUnit, *timeline.CueRa
 	}
 	appendUnit("greetings-load", "blank", 168, 0, 0, 0)
 	appendUnit("star-pages", "star-pages", 1747, 0, 0, 0)
-	appendUnit("circle-load", "blank", 100, 0, 0, 0)
+	appendUnit("circle-load", "blank", 185, 0, 0, 0)
 	appendUnit("circle-twist", "circle", 3341, 0, 0, 0)
 	appendUnit("contact-load", "blank", 100, 0, 0, 0)
 	appendUnit("contact-spheres", "contact", 1194, 0, 0, 0)
 	appendUnit("perspective-load", "blank", 50, 0, 0, 0)
 	appendUnit("perspective-text", "perspective", 1677, 0, 0, 0)
-	appendUnit("reminder-stars", "blank", 128, 0, 0, 0)
-	appendUnit("always-remember", "card", 300, 10, 0, 235)
-	appendUnit("finale-load", "blank", 350, 0, 0, 0)
+	appendUnit("reminder-stars", "blank", 148, 0, 0, 0)
+	// The final disk transfer overlaps the held reminder. Match its visible
+	// hold and subsequent blank interval independently of the loading speed.
+	appendUnit("always-remember", "card", 450, 10, 0, 385)
+	appendUnit("finale-load", "blank", 138, 0, 0, 0)
 	appendUnit("checkerboard-finale", "finale", 2000, 0, 0, 0)
 	ranges := make([]timeline.CueRange, len(units))
 	for i, unit := range units {

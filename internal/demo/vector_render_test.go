@@ -74,9 +74,17 @@ func TestLateSceneDrawsPreserveTheSourceClocksAndPixels(t *testing.T) {
 	defer game.Close()
 	dst := ebiten.NewImage(Width, Height)
 	defer dst.Deallocate()
-	for _, tick := range []int{17794, 18150, 18700, 19038, 19400, 20200, 21493, 22000, 23800} {
-		if err := game.FastForward(tick); err != nil {
+	for _, checkpoint := range []struct {
+		tick int
+		name string
+	}{{17879, "contact-spheres"}, {18226, "contact-spheres"}, {18700, "contact-spheres"},
+		{19123, "perspective-text"}, {19400, "perspective-text"}, {20200, "perspective-text"},
+		{21536, "checkerboard-finale"}, {22000, "checkerboard-finale"}, {23800, "checkerboard-finale"}} {
+		if err := game.FastForward(checkpoint.tick); err != nil {
 			t.Fatal(err)
+		}
+		if name, _ := game.Position(); name != checkpoint.name {
+			t.Fatal("verification checkpoint reached another scene", checkpoint, name)
 		}
 		game.Draw(dst)
 		a := make([]byte, Width*Height*4)
@@ -84,8 +92,8 @@ func TestLateSceneDrawsPreserveTheSourceClocksAndPixels(t *testing.T) {
 		game.Draw(dst)
 		b := make([]byte, len(a))
 		dst.ReadPixels(b)
-		if game.clock.Tick() != tick || !bytes.Equal(a, b) {
-			t.Fatal("late-scene drawing changed clock or pixels", tick)
+		if game.clock.Tick() != checkpoint.tick || !bytes.Equal(a, b) {
+			t.Fatal("late-scene drawing changed clock or pixels", checkpoint.tick)
 		}
 	}
 }
