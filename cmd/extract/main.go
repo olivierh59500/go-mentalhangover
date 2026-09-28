@@ -16,8 +16,8 @@ import (
 )
 
 func main() {
-	diskPath := flag.String("disk", "previous/Scoopex-MentalHangover.adf", "original disk image")
-	modulePath := flag.String("module", "previous/madness.mod", "independent soundtrack reference")
+	diskPath := flag.String("disk", "", "path to the original disk image (required)")
+	modulePath := flag.String("module", "", "path to the independent soundtrack reference (required)")
 	output := flag.String("out", "assets/raw", "decoded production data directory")
 	flag.Parse()
 	if err := run(*diskPath, *modulePath, *output); err != nil {
@@ -26,6 +26,9 @@ func main() {
 }
 
 func run(diskPath, modulePath, output string) error {
+	if diskPath == "" || modulePath == "" {
+		return fmt.Errorf("both -disk and -module reference paths are required")
+	}
 	disk, err := os.ReadFile(diskPath)
 	if err != nil {
 		return err

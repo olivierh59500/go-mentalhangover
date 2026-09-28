@@ -20,7 +20,7 @@ cylinder 39 after the patterned unit has loaded cylinders 41–43.
 
 The module occupies exactly 143,136 bytes, including its 31 patterns and sample
 bank, at the beginning of the music transfer. Those bytes are identical to the
-supplied `previous/madness.mod`. Remaining bytes in that transfer are retained
+supplied `madness.mod`. Remaining bytes in that transfer are retained
 for subsequent asset identification.
 
 ## Graphics and clocks identified so far
