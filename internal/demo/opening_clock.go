@@ -50,6 +50,15 @@ func openingProgram(models []source.VectorModel) ([]openingUnit, *timeline.CueRa
 	appendUnit("filled-vectors", "card", 245, 8, 0, 180)
 	appendUnit("filled-cube", "solid", 585, 0, 0, 0)
 	appendUnit("faceted-solid", "solid", 676, 0, 1, 0)
+	appendUnit("stencil-vectors", "card", 300, 9, 0, 235)
+	for i, definition := range []struct {
+		name   string
+		frames int
+	}{
+		{"gold-arrow", 318}, {"gold-arrow-pass", 200}, {"yellow-cube", 700}, {"brown-facets", 800},
+		{"paired-boxes", 397}, {"patterned-pyramid", 500}, {"hollow-frame", 950}, {"color-block", 500}} {
+		appendUnit(definition.name, "pattern", definition.frames, 0, i, 0)
+	}
 	ranges := make([]timeline.CueRange, len(units))
 	for i, unit := range units {
 		ranges[i] = timeline.CueRange{Start: float64(unit.Start), End: float64(unit.Start + unit.Frames)}

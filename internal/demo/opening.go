@@ -33,6 +33,7 @@ type Opening struct {
 	vectors      []*vectorEffect
 	bobs         *bobEffect
 	solids       []*filledSolidEffect
+	patterns     []*patternedEffect
 	unit         int
 	localTick    int
 	musicStarted bool
@@ -162,6 +163,19 @@ func NewOpening(muted bool) (*Opening, error) {
 	for _, solid := range solids {
 		game.solids = append(game.solids, newFilledSolid(solid))
 	}
+	patternData, err := assets.Files.ReadFile("raw/patterned-vectors.bin")
+	if err != nil {
+		game.Close()
+		return nil, err
+	}
+	patterns, err := source.PatternedSolids(patternData)
+	if err != nil {
+		game.Close()
+		return nil, err
+	}
+	for _, pattern := range patterns {
+		game.patterns = append(game.patterns, newPatterned(pattern))
+	}
 	if err := game.prepare(); err != nil {
 		game.Close()
 		return nil, err
@@ -204,6 +218,13 @@ func (game *Opening) prepare() error {
 	}
 	if data.Kind == "solid" {
 		return game.solids[data.Model].Update(frame)
+	}
+	if data.Kind == "pattern" {
+		effect := game.patterns[data.Model]
+		if err := effect.Update(frame); err != nil {
+			return err
+		}
+		game.paletteMode, game.paletteLevel = source.PaletteScaled128, effect.Level()
 	}
 	if data.Kind == "card" {
 		return game.cards[data.Card].Update(frame)
@@ -265,6 +286,8 @@ func (game *Opening) Draw(dst *ebiten.Image) {
 		game.bobs.Draw(game.layer)
 	case "solid":
 		game.solids[data.Model].Draw(game.layer)
+	case "pattern":
+		game.patterns[data.Model].Draw(game.layer)
 	}
 	game.palette.Draw(dst, game.layer, game.paletteMode, game.paletteLevel)
 }
@@ -272,6 +295,9 @@ func (game *Opening) Draw(dst *ebiten.Image) {
 func (*Opening) Layout(int, int) (int, int) { return Width, Height }
 
 func (game *Opening) Close() {
+	for _, pattern := range game.patterns {
+		pattern.Close()
+	}
 	for _, solid := range game.solids {
 		solid.Close()
 	}

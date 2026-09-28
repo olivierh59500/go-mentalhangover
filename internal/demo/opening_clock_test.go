@@ -30,6 +30,9 @@ func TestOpeningRetainsOriginalOperationCountsAndBoundaryOrder(t *testing.T) {
 		{"sign-raster", 3901, 50}, {"scoopex-demo", 3951, 245},
 		{"filled-bobs", 4196, 1971},
 		{"filled-vectors", 6167, 245}, {"filled-cube", 6412, 585}, {"faceted-solid", 6997, 676},
+		{"stencil-vectors", 7673, 300}, {"gold-arrow", 7973, 318}, {"gold-arrow-pass", 8291, 200},
+		{"yellow-cube", 8491, 700}, {"brown-facets", 9191, 800}, {"paired-boxes", 9991, 397},
+		{"patterned-pyramid", 10388, 500}, {"hollow-frame", 10888, 950}, {"color-block", 11838, 500},
 	}
 	if len(units) != len(expected) {
 		t.Fatal("opening units missing")
@@ -46,7 +49,7 @@ func TestOpeningRetainsOriginalOperationCountsAndBoundaryOrder(t *testing.T) {
 			}
 		}
 	}
-	if _, _, active := program.At(7673); active {
+	if _, _, active := program.At(12338); active {
 		t.Fatal("unimplemented next scene counted as completed opening")
 	}
 }

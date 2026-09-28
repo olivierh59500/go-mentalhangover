@@ -14,8 +14,8 @@ by half its sampling interval. Later boundaries remain provisional.
 | 70–84 s | Follow the sign, sign raster sweep and Scoopex text card | Bitmap pages, masked raster overlay | Original 27 copper groups and 50-frame sweep |
 | 84–123 s | Filled BOBs: scrolling, repeated cubes and pyramids | Scrolling facade, retained triangle batch | Binary controls, DMA-rounded lookup positions and raster colors |
 | 123–153 s | Filled-vector introduction, cube and faceted solid | Retained triangle batch, palette atlas, cue clock | Original edge faces, mirrored sine bank and 54-phase rasters |
-| 150–240 s | Stencil and patterned vector objects, textured panels and cube | Mesh rendering, masks, image layers | Exact stencil/texture rules and object sequence |
-| 240–280 s | Greetings and member text pages over stars | Bitmap pages/scrolling, projected field | Font layout, messages and transitions |
+| 153–247 s | Stencil interlude, two arrow passes, yellow cube, brown facets, paired boxes, pyramid, hollow frame and color block | Triangle batches with parity masks, repeating materials, cue clocks | Original packed contours, degree table, 128-level depth palette and 25/50 Hz cadences |
+| About 250–287 s | Steered point field with greetings and member text pages | Bitmap pages, projected field | Separate point/text palettes, messages and steering program |
 | 280–345 s | Circular text over a raster-colored mountain silhouette | Text paths, raster materials and masking | Original circular layout and background bitplanes |
 | 345–375 s | Contact text and moving blue objects/trails | Bitmap pages, projected sprites/histories | Authored positions, sprite bank and choreography |
 | 375–420 s | Perspective blue glyph/object rows and final reminder | Projected geometry/text, timelines | Original font geometry, projection and movement |

@@ -66,9 +66,9 @@ func TestCopperShaderMatchesAllOriginalNibbles(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer palette.Close()
-	for _, mode := range []source.PaletteMode{source.PaletteGray, source.PaletteFromWhite, source.PaletteToBlack} {
-		for _, level := range []int{0, 1, 7, 15, 16, 31, 32} {
-			if mode != source.PaletteFromWhite && level > 16 {
+	for _, mode := range []source.PaletteMode{source.PaletteGray, source.PaletteFromWhite, source.PaletteToBlack, source.PaletteScaled128} {
+		for _, level := range []int{0, 1, 7, 15, 16, 31, 32, 127} {
+			if (mode == source.PaletteGray || mode == source.PaletteToBlack) && level > 16 || mode == source.PaletteFromWhite && level > 32 {
 				continue
 			}
 			dst.Clear()
@@ -211,5 +211,51 @@ func TestBOBFontMappingAndRepeatedDrawKeepClockAndPixels(t *testing.T) {
 		if cursor != clock.cursor || distance != clock.distance || angles != clock.angles || !bytes.Equal(pixels, second) {
 			t.Fatal("BOB drawing advances the source clocks", tick)
 		}
+	}
+}
+
+func TestActualStencilEffectsHoldHalfRatePosesAndDrawWithoutMutation(t *testing.T) {
+	data, _ := assets.Files.ReadFile("raw/patterned-vectors.bin")
+	models, err := source.PatternedSolids(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dst := ebiten.NewImage(Width, Height)
+	defer dst.Deallocate()
+	for _, index := range []int{3, 6} {
+		e := newPatterned(models[index])
+		for i := 0; i < 80; i++ {
+			if err := e.Update(kit.Frame{}); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if err := e.Update(kit.Frame{}); err != nil {
+			t.Fatal(err)
+		}
+		pose := e.clock.state
+		points := append([]source.Point2(nil), e.points...)
+		dst.Clear()
+		e.Draw(dst)
+		a := make([]byte, Width*Height*4)
+		dst.ReadPixels(a)
+		if err := e.Update(kit.Frame{}); err != nil {
+			t.Fatal(err)
+		}
+		if e.clock.state != pose {
+			t.Fatal("25 Hz stencil pose changed on an intervening PAL frame")
+		}
+		for j, p := range points {
+			if e.points[j] != p {
+				t.Fatal("held stencil projection changed")
+			}
+		}
+		dst.Clear()
+		e.Draw(dst)
+		b := make([]byte, len(a))
+		dst.ReadPixels(b)
+		if !bytes.Equal(a, b) || e.clock.state != pose {
+			t.Fatal("held stencil draw changed pixels or the pose")
+		}
+		e.Close()
 	}
 }
