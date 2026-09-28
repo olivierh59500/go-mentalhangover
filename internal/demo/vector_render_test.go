@@ -66,9 +66,9 @@ func TestCopperShaderMatchesAllOriginalNibbles(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer palette.Close()
-	for _, mode := range []source.PaletteMode{source.PaletteGray, source.PaletteFromWhite, source.PaletteToBlack, source.PaletteScaled128, source.PaletteScaled32} {
-		for _, level := range []int{0, 1, 7, 15, 16, 31, 32, 127} {
-			if (mode == source.PaletteGray || mode == source.PaletteToBlack) && level > 16 || (mode == source.PaletteFromWhite || mode == source.PaletteScaled32) && level > 32 {
+	for _, mode := range []source.PaletteMode{source.PaletteGray, source.PaletteFromWhite, source.PaletteToBlack, source.PaletteScaled128, source.PaletteScaled32, source.PaletteScaled64} {
+		for _, level := range []int{0, 1, 7, 15, 16, 31, 32, 64, 127} {
+			if (mode == source.PaletteGray || mode == source.PaletteToBlack) && level > 16 || (mode == source.PaletteFromWhite || mode == source.PaletteScaled32) && level > 32 || mode == source.PaletteScaled64 && level > 64 {
 				continue
 			}
 			dst.Clear()

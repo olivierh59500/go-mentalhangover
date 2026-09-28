@@ -35,6 +35,9 @@ func TestOpeningRetainsOriginalOperationCountsAndBoundaryOrder(t *testing.T) {
 		{"patterned-pyramid", 10388, 500}, {"hollow-frame", 10888, 950}, {"color-block", 11838, 500},
 		{"greetings-load", 12338, 168}, {"star-pages", 12506, 1747},
 		{"circle-load", 14253, 100}, {"circle-twist", 14353, 3341},
+		{"contact-load", 17694, 100}, {"contact-spheres", 17794, 1194},
+		{"perspective-load", 18988, 50}, {"perspective-text", 19038, 1677},
+		{"reminder-stars", 20715, 128}, {"always-remember", 20843, 300}, {"finale-load", 21143, 350}, {"checkerboard-finale", 21493, 2000},
 	}
 	if len(units) != len(expected) {
 		t.Fatal("opening units missing")
@@ -51,7 +54,7 @@ func TestOpeningRetainsOriginalOperationCountsAndBoundaryOrder(t *testing.T) {
 			}
 		}
 	}
-	if _, _, active := program.At(17694); active {
+	if _, _, active := program.At(23493); active {
 		t.Fatal("unimplemented next scene counted as completed opening")
 	}
 }

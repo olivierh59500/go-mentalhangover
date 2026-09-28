@@ -88,6 +88,7 @@ const (
 	PaletteToBlack
 	PaletteScaled128
 	PaletteScaled32
+	PaletteScaled64
 )
 
 func PaletteWord(word uint16, mode PaletteMode, level int) uint16 {
@@ -105,6 +106,8 @@ func PaletteWord(word uint16, mode PaletteMode, level int) uint16 {
 			value = value * max(0, min(127, level)) >> 7
 		case PaletteScaled32:
 			value = value * max(0, min(32, level)) >> 5
+		case PaletteScaled64:
+			value = value * max(0, min(64, level)) >> 6
 		}
 		result |= uint16(value) << shift
 	}

@@ -36,6 +36,9 @@ type Opening struct {
 	patterns     []*patternedEffect
 	starPages    *starPageEffect
 	circle       *circleEffect
+	contact      *contactEffect
+	perspective  *perspectiveEffect
+	finale       *finaleEffect
 	unit         int
 	localTick    int
 	musicStarted bool
@@ -208,6 +211,43 @@ func NewOpening(muted bool) (*Opening, error) {
 		game.Close()
 		return nil, err
 	}
+	contactData, err := assets.Files.ReadFile("raw/circle-scroll.bin")
+	if err != nil {
+		game.Close()
+		return nil, err
+	}
+	contact, err := source.ContactPart(contactData)
+	if err != nil {
+		game.Close()
+		return nil, err
+	}
+	game.contact = newContact(contact, game.palette)
+	perspectiveData, err := assets.Files.ReadFile("raw/final-reminder.bin")
+	if err != nil {
+		game.Close()
+		return nil, err
+	}
+	projected, err := source.PerspectivePart(perspectiveData)
+	if err != nil {
+		game.Close()
+		return nil, err
+	}
+	game.perspective, err = newPerspective(projected, game.palette)
+	if err != nil {
+		game.Close()
+		return nil, err
+	}
+	finaleData, err := assets.Files.ReadFile("raw/checkerboard.bin")
+	if err != nil {
+		game.Close()
+		return nil, err
+	}
+	ending, err := source.FinalePart(finaleData)
+	if err != nil {
+		game.Close()
+		return nil, err
+	}
+	game.finale = newFinale(ending, game.palette)
 	if err := game.prepare(); err != nil {
 		game.Close()
 		return nil, err
@@ -219,8 +259,8 @@ func (game *Opening) prepare() error {
 	tick := game.clock.Tick()
 	unit, _, active := game.ranges.At(float64(tick))
 	if !active {
-		game.done = true
-		return nil
+		// The last scene keeps running until the user closes the window.
+		unit = len(game.units) - 1
 	}
 	game.unit = unit
 	data := game.units[unit]
@@ -264,6 +304,15 @@ func (game *Opening) prepare() error {
 	if data.Kind == "circle" {
 		return game.circle.Update(frame)
 	}
+	if data.Kind == "contact" {
+		return game.contact.Update(frame)
+	}
+	if data.Kind == "perspective" {
+		return game.perspective.Update(frame)
+	}
+	if data.Kind == "finale" {
+		return game.finale.Update(frame)
+	}
 	if data.Kind == "card" {
 		return game.cards[data.Card].Update(frame)
 	}
@@ -303,7 +352,7 @@ func (game *Opening) Draw(dst *ebiten.Image) {
 	}
 	data := game.units[game.unit]
 	// The later dual-playfield parts clear sprite DMA in their copper lists.
-	if data.Kind != "star-pages" && data.Kind != "circle" {
+	if data.Kind != "star-pages" && data.Kind != "circle" && data.Kind != "contact" && data.Kind != "perspective" && data.Kind != "finale" {
 		game.shared.stars.Draw(dst)
 	}
 	game.layer.Clear()
@@ -333,6 +382,12 @@ func (game *Opening) Draw(dst *ebiten.Image) {
 		game.starPages.Draw(game.layer)
 	case "circle":
 		game.circle.Draw(game.layer)
+	case "contact":
+		game.contact.Draw(game.layer)
+	case "perspective":
+		game.perspective.Draw(game.layer)
+	case "finale":
+		game.finale.Draw(game.layer)
 	}
 	game.palette.Draw(dst, game.layer, game.paletteMode, game.paletteLevel)
 }
@@ -340,6 +395,15 @@ func (game *Opening) Draw(dst *ebiten.Image) {
 func (*Opening) Layout(int, int) (int, int) { return Width, Height }
 
 func (game *Opening) Close() {
+	if game.finale != nil {
+		game.finale.Close()
+	}
+	if game.perspective != nil {
+		game.perspective.Close()
+	}
+	if game.contact != nil {
+		game.contact.Close()
+	}
 	if game.circle != nil {
 		game.circle.Close()
 	}

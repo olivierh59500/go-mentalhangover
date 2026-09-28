@@ -1,7 +1,6 @@
 package source
 
 import (
-	"encoding/binary"
 	"fmt"
 	"image"
 )
@@ -35,70 +34,10 @@ func CirclePart(data []byte) (CircleData, error) {
 			result.Profile = wave
 		}
 	}
-	for i := 0; i < 59; i++ {
-		pointer, err := s.read(0x9958+uint32(i*4), 4)
-		if err != nil {
-			return result, err
-		}
-		address := binary.BigEndian.Uint32(pointer)
-		header, err := s.read(address, 1)
-		if err != nil {
-			return result, err
-		}
-		count := int(header[0])
-		address++
-		glyph := PolarGlyph{}
-		if count == 0 {
-			result.Glyphs[byte(i+32)] = glyph
-			continue
-		}
-		var contour []PolarGlyphPoint
-		readPoint := func() (PolarGlyphPoint, error) {
-			bank, err := s.read(address, 2)
-			if err != nil {
-				return PolarGlyphPoint{}, err
-			}
-			address += 2
-			if bank[0] >= 128 || bank[1] > 10 {
-				return PolarGlyphPoint{}, fmt.Errorf("source: invalid polar font vertex")
-			}
-			return PolarGlyphPoint{bank[0], bank[1]}, nil
-		}
-		p, err := readPoint()
-		if err != nil {
-			return result, err
-		}
-		contour = append(contour, p)
-		for edge := 0; edge < count; {
-			marker, err := s.read(address, 1)
-			if err != nil {
-				return result, err
-			}
-			if marker[0] >= 128 {
-				glyph.Contours = append(glyph.Contours, contour)
-				contour = nil
-				address++
-				p, err := readPoint()
-				if err != nil {
-					return result, err
-				}
-				contour = append(contour, p)
-				continue
-			}
-			p, err := readPoint()
-			if err != nil {
-				return result, err
-			}
-			contour = append(contour, p)
-			edge++
-		}
-		glyph.Contours = append(glyph.Contours, contour)
-		for _, c := range glyph.Contours {
-			if len(c) < 4 || c[0] != c[len(c)-1] {
-				return result, fmt.Errorf("source: open polar font contour for %q", byte(i+32))
-			}
-		}
-		result.Glyphs[byte(i+32)] = glyph
+	var err error
+	result.Glyphs, err = ReadOutlineFont(data, 0x9000, 0x9958, 10)
+	if err != nil {
+		return result, err
 	}
 	address := uint32(0x9f12)
 	for len(result.Text) < 4096 {
