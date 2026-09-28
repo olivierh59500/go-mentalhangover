@@ -47,6 +47,9 @@ func openingProgram(models []source.VectorModel) ([]openingUnit, *timeline.CueRa
 	// supplied recording; the flash and fade keep their original frame counts.
 	appendUnit("scoopex-demo", "card", 245, 7, 0, 180)
 	appendUnit("filled-bobs", "bobs", 1971, 0, 0, 0)
+	appendUnit("filled-vectors", "card", 245, 8, 0, 180)
+	appendUnit("filled-cube", "solid", 585, 0, 0, 0)
+	appendUnit("faceted-solid", "solid", 676, 0, 1, 0)
 	ranges := make([]timeline.CueRange, len(units))
 	for i, unit := range units {
 		ranges[i] = timeline.CueRange{Start: float64(unit.Start), End: float64(unit.Start + unit.Frames)}

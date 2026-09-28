@@ -52,3 +52,32 @@ func projectBOB(points []source.Point3, matrix [9]int16, depth int16, output []s
 	}
 	return nil
 }
+
+// projectSolid preserves the large-vector projector before its display-window
+// offset. Each transformed point has a padding longword in the source buffer.
+func projectSolid(points []source.Point3, matrix [9]int16, state [6]int16, output []source.Point2) error {
+	if len(points) != len(output) {
+		return fmt.Errorf("solid projection buffer differs from source geometry")
+	}
+	for i, p := range points {
+		x, y, z := int32(p.X), int32(p.Y), int32(p.Z)
+		px := x*int32(matrix[0]) + y*int32(matrix[3]) + z*int32(matrix[6])
+		py := x*int32(matrix[1]) + y*int32(matrix[4]) + z*int32(matrix[7])
+		pz := x*int32(matrix[2]) + y*int32(matrix[5]) + z*int32(matrix[8])
+		depth := int16(uint16(int16(pz>>9)) + 512 + uint16(state[5]>>1))
+		if depth == 0 {
+			return fmt.Errorf("original filled solid divides by zero")
+		}
+		divide := func(value int32) int16 {
+			q := value / int32(depth)
+			if q < -32768 || q > 32767 {
+				return int16(value)
+			}
+			return int16(q)
+		}
+		px += int32(state[3]) << 8
+		py += int32(state[4]) << 8
+		output[i] = source.Point2{X: int16(uint16(divide(px)) + 351), Y: int16(uint16(divide(py)) + 145)}
+	}
+	return nil
+}

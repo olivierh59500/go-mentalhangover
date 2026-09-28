@@ -32,6 +32,7 @@ type Opening struct {
 	cards        []*scrolling.Scrolling
 	vectors      []*vectorEffect
 	bobs         *bobEffect
+	solids       []*filledSolidEffect
 	unit         int
 	localTick    int
 	musicStarted bool
@@ -148,6 +149,19 @@ func NewOpening(muted bool) (*Opening, error) {
 		game.Close()
 		return nil, err
 	}
+	solidData, err := assets.Files.ReadFile("raw/stencil.bin")
+	if err != nil {
+		game.Close()
+		return nil, err
+	}
+	solids, err := source.FilledSolids(solidData)
+	if err != nil {
+		game.Close()
+		return nil, err
+	}
+	for _, solid := range solids {
+		game.solids = append(game.solids, newFilledSolid(solid))
+	}
 	if err := game.prepare(); err != nil {
 		game.Close()
 		return nil, err
@@ -187,6 +201,9 @@ func (game *Opening) prepare() error {
 	}
 	if data.Kind == "bobs" {
 		return game.bobs.Update(frame)
+	}
+	if data.Kind == "solid" {
+		return game.solids[data.Model].Update(frame)
 	}
 	if data.Kind == "card" {
 		return game.cards[data.Card].Update(frame)
@@ -246,6 +263,8 @@ func (game *Opening) Draw(dst *ebiten.Image) {
 		game.signOverlay.Draw(game.layer)
 	case "bobs":
 		game.bobs.Draw(game.layer)
+	case "solid":
+		game.solids[data.Model].Draw(game.layer)
 	}
 	game.palette.Draw(dst, game.layer, game.paletteMode, game.paletteLevel)
 }
@@ -253,6 +272,9 @@ func (game *Opening) Draw(dst *ebiten.Image) {
 func (*Opening) Layout(int, int) (int, int) { return Width, Height }
 
 func (game *Opening) Close() {
+	for _, solid := range game.solids {
+		solid.Close()
+	}
 	if game.bobs != nil {
 		game.bobs.Close()
 	}

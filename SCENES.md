@@ -13,7 +13,7 @@ by half its sampling interval. Later boundaries remain provisional.
 | 30–70 s | Blue Slayer, Reward and Uncle Tom author objects | Bounded triangle batch, cue clock | Original word-sized projection and cue banks |
 | 70–84 s | Follow the sign, sign raster sweep and Scoopex text card | Bitmap pages, masked raster overlay | Original 27 copper groups and 50-frame sweep |
 | 84–123 s | Filled BOBs: scrolling, repeated cubes and pyramids | Scrolling facade, retained triangle batch | Binary controls, DMA-rounded lookup positions and raster colors |
-| 115–150 s | Filled-vector introduction and rotating shaded object | Solid mesh/materials, timelines | Original face bank, palettes and rotation rules |
+| 123–153 s | Filled-vector introduction, cube and faceted solid | Retained triangle batch, palette atlas, cue clock | Original edge faces, mirrored sine bank and 54-phase rasters |
 | 150–240 s | Stencil and patterned vector objects, textured panels and cube | Mesh rendering, masks, image layers | Exact stencil/texture rules and object sequence |
 | 240–280 s | Greetings and member text pages over stars | Bitmap pages/scrolling, projected field | Font layout, messages and transitions |
 | 280–345 s | Circular text over a raster-colored mountain silhouette | Text paths, raster materials and masking | Original circular layout and background bitplanes |
