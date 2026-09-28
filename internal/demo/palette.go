@@ -20,6 +20,7 @@ func Fragment(dst vec4, src vec2, color vec4) vec4 {
     if Mode == 2 { value = vec3(15) - floor((vec3(15) - target) * Level / 32) }
     if Mode == 3 { value = floor(target * Level / 16) }
     if Mode == 4 { value = floor(target * Level / 128) }
+    if Mode == 5 { value = floor(target * Level / 32) }
     return vec4(value / 15, c.a)
 }
 `

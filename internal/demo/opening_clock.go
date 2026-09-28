@@ -59,6 +59,8 @@ func openingProgram(models []source.VectorModel) ([]openingUnit, *timeline.CueRa
 		{"paired-boxes", 397}, {"patterned-pyramid", 500}, {"hollow-frame", 950}, {"color-block", 500}} {
 		appendUnit(definition.name, "pattern", definition.frames, 0, i, 0)
 	}
+	appendUnit("greetings-load", "blank", 168, 0, 0, 0)
+	appendUnit("star-pages", "star-pages", 1747, 0, 0, 0)
 	ranges := make([]timeline.CueRange, len(units))
 	for i, unit := range units {
 		ranges[i] = timeline.CueRange{Start: float64(unit.Start), End: float64(unit.Start + unit.Frames)}

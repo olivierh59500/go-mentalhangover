@@ -34,6 +34,7 @@ type Opening struct {
 	bobs         *bobEffect
 	solids       []*filledSolidEffect
 	patterns     []*patternedEffect
+	starPages    *starPageEffect
 	unit         int
 	localTick    int
 	musicStarted bool
@@ -176,6 +177,21 @@ func NewOpening(muted bool) (*Opening, error) {
 	for _, pattern := range patterns {
 		game.patterns = append(game.patterns, newPatterned(pattern))
 	}
+	starData, err := assets.Files.ReadFile("raw/textured-cube.bin")
+	if err != nil {
+		game.Close()
+		return nil, err
+	}
+	stars, err := source.StarPageData(starData)
+	if err != nil {
+		game.Close()
+		return nil, err
+	}
+	game.starPages, err = newStarPages(stars, game.palette)
+	if err != nil {
+		game.Close()
+		return nil, err
+	}
 	if err := game.prepare(); err != nil {
 		game.Close()
 		return nil, err
@@ -226,6 +242,9 @@ func (game *Opening) prepare() error {
 		}
 		game.paletteMode, game.paletteLevel = source.PaletteScaled128, effect.Level()
 	}
+	if data.Kind == "star-pages" {
+		return game.starPages.Update(frame)
+	}
 	if data.Kind == "card" {
 		return game.cards[data.Card].Update(frame)
 	}
@@ -260,11 +279,14 @@ func (game *Opening) Update() error {
 
 func (game *Opening) Draw(dst *ebiten.Image) {
 	dst.Fill(color.Black)
-	game.shared.stars.Draw(dst)
 	if game.unit < 0 || game.done {
 		return
 	}
 	data := game.units[game.unit]
+	// The later dual-playfield parts clear sprite DMA in their copper lists.
+	if data.Kind != "star-pages" && data.Kind != "circle" {
+		game.shared.stars.Draw(dst)
+	}
 	game.layer.Clear()
 	switch data.Kind {
 	case "eagle", "title":
@@ -288,6 +310,8 @@ func (game *Opening) Draw(dst *ebiten.Image) {
 		game.solids[data.Model].Draw(game.layer)
 	case "pattern":
 		game.patterns[data.Model].Draw(game.layer)
+	case "star-pages":
+		game.starPages.Draw(game.layer)
 	}
 	game.palette.Draw(dst, game.layer, game.paletteMode, game.paletteLevel)
 }
@@ -295,6 +319,9 @@ func (game *Opening) Draw(dst *ebiten.Image) {
 func (*Opening) Layout(int, int) (int, int) { return Width, Height }
 
 func (game *Opening) Close() {
+	if game.starPages != nil {
+		game.starPages.Close()
+	}
 	for _, pattern := range game.patterns {
 		pattern.Close()
 	}

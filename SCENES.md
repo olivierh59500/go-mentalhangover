@@ -15,7 +15,7 @@ by half its sampling interval. Later boundaries remain provisional.
 | 84–123 s | Filled BOBs: scrolling, repeated cubes and pyramids | Scrolling facade, retained triangle batch | Binary controls, DMA-rounded lookup positions and raster colors |
 | 123–153 s | Filled-vector introduction, cube and faceted solid | Retained triangle batch, palette atlas, cue clock | Original edge faces, mirrored sine bank and 54-phase rasters |
 | 153–247 s | Stencil interlude, two arrow passes, yellow cube, brown facets, paired boxes, pyramid, hollow frame and color block | Triangle batches with parity masks, repeating materials, cue clocks | Original packed contours, degree table, 128-level depth palette and 25/50 Hz cadences |
-| About 250–287 s | Steered point field with greetings and member text pages | Bitmap pages, projected field | Separate point/text palettes, messages and steering program |
+| About 250–285 s | Steered point field with greetings and member text pages | Cached bitmap pages, retained pixel batch | Original reciprocal projection, XOR collisions, steering and separate 32-step palettes |
 | 280–345 s | Circular text over a raster-colored mountain silhouette | Text paths, raster materials and masking | Original circular layout and background bitplanes |
 | 345–375 s | Contact text and moving blue objects/trails | Bitmap pages, projected sprites/histories | Authored positions, sprite bank and choreography |
 | 375–420 s | Perspective blue glyph/object rows and final reminder | Projected geometry/text, timelines | Original font geometry, projection and movement |

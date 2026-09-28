@@ -66,9 +66,9 @@ func TestCopperShaderMatchesAllOriginalNibbles(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer palette.Close()
-	for _, mode := range []source.PaletteMode{source.PaletteGray, source.PaletteFromWhite, source.PaletteToBlack, source.PaletteScaled128} {
+	for _, mode := range []source.PaletteMode{source.PaletteGray, source.PaletteFromWhite, source.PaletteToBlack, source.PaletteScaled128, source.PaletteScaled32} {
 		for _, level := range []int{0, 1, 7, 15, 16, 31, 32, 127} {
-			if (mode == source.PaletteGray || mode == source.PaletteToBlack) && level > 16 || mode == source.PaletteFromWhite && level > 32 {
+			if (mode == source.PaletteGray || mode == source.PaletteToBlack) && level > 16 || (mode == source.PaletteFromWhite || mode == source.PaletteScaled32) && level > 32 {
 				continue
 			}
 			dst.Clear()
@@ -257,5 +257,39 @@ func TestActualStencilEffectsHoldHalfRatePosesAndDrawWithoutMutation(t *testing.
 			t.Fatal("held stencil draw changed pixels or the pose")
 		}
 		e.Close()
+	}
+}
+
+func TestGreetingDrawUsesCachedPagesAndDoesNotAdvanceSteering(t *testing.T) {
+	data := starPagesForTest(t)
+	palette, err := newCopperPalette()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer palette.Close()
+	effect, err := newStarPages(data, palette)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer effect.Close()
+	dst := ebiten.NewImage(Width, Height)
+	defer dst.Deallocate()
+	for tick := 0; tick < 1100; tick++ {
+		effect.Update(kit.Frame{})
+		if tick%97 != 0 {
+			continue
+		}
+		angles, offset, frame := effect.clock.angles, effect.clock.offset, effect.clock.frame
+		dst.Clear()
+		effect.Draw(dst)
+		a := make([]byte, Width*Height*4)
+		dst.ReadPixels(a)
+		dst.Clear()
+		effect.Draw(dst)
+		b := make([]byte, len(a))
+		dst.ReadPixels(b)
+		if angles != effect.clock.angles || offset != effect.clock.offset || frame != effect.clock.frame || !bytes.Equal(a, b) {
+			t.Fatal("greeting draw changed steering or page pixels", tick)
+		}
 	}
 }
