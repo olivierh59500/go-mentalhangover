@@ -1,0 +1,101 @@
+[
+  {
+    "Name": "intro",
+    "Cylinder": 3,
+    "Count": 3,
+    "MemoryAddress": 131072,
+    "File": "intro.bin",
+    "SHA256": "062edfa425cca436a602c972c1476d54c1d5a720640989a7133b953f6f6f03bc",
+    "Bytes": 33792
+  },
+  {
+    "Name": "music",
+    "Cylinder": 6,
+    "Count": 23,
+    "MemoryAddress": 263170,
+    "File": "music.bin",
+    "SHA256": "cb8ce8c5386925499f98466e813247f786538646570bcf18264eca67ff94234b",
+    "Bytes": 259072
+  },
+  {
+    "Name": "authors-ribbon",
+    "Cylinder": 29,
+    "Count": 7,
+    "MemoryAddress": 36864,
+    "File": "authors-ribbon.bin",
+    "SHA256": "7929b6bb7d3a1c688b149c34abcdd2495b7cf7fa1525f4c03425a367a3d148ee",
+    "Bytes": 78848
+  },
+  {
+    "Name": "filled-vector",
+    "Cylinder": 36,
+    "Count": 2,
+    "MemoryAddress": 36864,
+    "File": "filled-vector.bin",
+    "SHA256": "041822221a8b7693c79c5106879893b2b1d30721f1cff3d1ab63c4ea1d7ab92d",
+    "Bytes": 22528
+  },
+  {
+    "Name": "stencil",
+    "Cylinder": 38,
+    "Count": 1,
+    "MemoryAddress": 36864,
+    "File": "stencil.bin",
+    "SHA256": "a38ed36b5626b4980731d755f429a2bff2c37b6dad52e474110b40d71a728c65",
+    "Bytes": 11264
+  },
+  {
+    "Name": "patterned-vectors",
+    "Cylinder": 41,
+    "Count": 3,
+    "MemoryAddress": 32768,
+    "File": "patterned-vectors.bin",
+    "SHA256": "53cd4e93b40495aa5e3fc938fdb6d67629a456253f4cd1076eecc8161bb2aa4a",
+    "Bytes": 33792
+  },
+  {
+    "Name": "textured-cube",
+    "Cylinder": 39,
+    "Count": 1,
+    "MemoryAddress": 36864,
+    "File": "textured-cube.bin",
+    "SHA256": "3e1f1dbe4392a2fadc8b96c36c2a43432fb7ba81ddfcd4a7178b74c357aefbee",
+    "Bytes": 11264
+  },
+  {
+    "Name": "greetings",
+    "Cylinder": 44,
+    "Count": 2,
+    "MemoryAddress": 36864,
+    "File": "greetings.bin",
+    "SHA256": "b5c3548c9795f19590fcdfa4d070ede144c8bb695775c90f6149bfc0953eeb9c",
+    "Bytes": 22528
+  },
+  {
+    "Name": "circle-scroll",
+    "Cylinder": 46,
+    "Count": 2,
+    "MemoryAddress": 36864,
+    "File": "circle-scroll.bin",
+    "SHA256": "4ab07448b43a5c7b0b7bad6f527ad7b28165dd7c183fa5f5edb2c1b56a735afb",
+    "Bytes": 22528
+  },
+  {
+    "Name": "final-reminder",
+    "Cylinder": 48,
+    "Count": 1,
+    "MemoryAddress": 36864,
+    "File": "final-reminder.bin",
+    "SHA256": "243215f93badd195e3d70ac9898f9e18e72e9d4510662de997e651807a6fa959",
+    "Bytes": 11264
+  },
+  {
+    "Name": "checkerboard",
+    "Cylinder": 49,
+    "Count": 11,
+    "MemoryAddress": 36864,
+    "File": "checkerboard.bin",
+    "SHA256": "3e3ef41fe91ac084b249bd7f74c2102f9dfc03d48092d3f778bdd159ef1203c0",
+    "Bytes": 123904
+  }
+]
