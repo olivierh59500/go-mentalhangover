@@ -84,3 +84,18 @@ func SerifFont(resident []byte) (*image.NRGBA, []int, error) {
 	}
 	return atlas, advances, nil
 }
+
+// MentalTitle decodes the five interleaved planes selected at 0x97d4. The copper
+// enables row advancement for 163 rows; indices 1..22 have authored target colors.
+func MentalTitle(authors []byte) (*image.NRGBA, error) {
+	const start, paletteStart = 0x12058 - 0x9000, 0x99b0 - 0x9000
+	if len(authors) < start || len(authors) < paletteStart+44 {
+		return nil, fmt.Errorf("source: missing Mental Hangover title")
+	}
+	palette := make([]uint16, 32)
+	for i := 1; i <= 22; i++ {
+		palette[i] = binary.BigEndian.Uint16(authors[paletteStart+(i-1)*2:])
+	}
+	return DecodePlanar(authors[start:], Planar{Width: 352, Height: 163, RowStride: 220,
+		PlaneOffsets: []int{0, 44, 88, 132, 176}, Palette: palette, TransparentZero: true})
+}
