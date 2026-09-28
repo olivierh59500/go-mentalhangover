@@ -35,6 +35,8 @@ Tick zero retains normal music playback and logs scene transitions plus
 TPS/FPS and memory every five seconds. A positive tick up to 30,000 seeks a
 muted reconstruction before continuing at 50 Hz. This provides repeatable
 checks of late scenes without changing normal playback.
+Verification requests apply at startup. Always force-stop before selecting a
+different checkpoint; resuming an existing activity preserves its scene clock.
 
 ```sh
 adb shell am force-stop com.olivierh.mentalhangover

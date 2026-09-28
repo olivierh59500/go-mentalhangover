@@ -27,19 +27,13 @@ func init() {
 }
 
 func (h *host) Update() error {
-	tick, requested := 0, false
-	select {
-	case tick = <-h.requests:
-		h.verification, requested = true, true
-	default:
-	}
-	if requested && h.game != nil {
-		h.game.Close()
-		h.game = nil
-		h.lastUnit = ""
-		h.lastReport = time.Time{}
-	}
 	if h.game == nil {
+		tick := 0
+		select {
+		case tick = <-h.requests:
+			h.verification = true
+		default:
+		}
 		var err error
 		h.game, err = demo.NewGame(h.verification && tick > 0)
 		if err != nil {
@@ -76,7 +70,7 @@ func (h *host) Draw(dst *ebiten.Image) {
 
 func (*host) Layout(int, int) (int, int) { return demo.Width, demo.Height }
 
-// ConfigureVerification queues a fresh checkpoint on the game goroutine.
+// ConfigureVerification queues a startup checkpoint before the view starts.
 // Tick zero keeps normal audio playback; a positive tick uses a muted seek.
 // Scene clocks still advance at 50 Hz after the initial deterministic seek.
 func ConfigureVerification(tick int) bool {
