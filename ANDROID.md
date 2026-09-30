@@ -24,9 +24,12 @@ excluded locally. The application ID is `com.olivierh.mentalhangover`.
 The 30 September 2026 ARM64 build embeds DCK v1.0.4 after the shared color and
 contour migrations. Its four native ELF load segments and the APK library
 placement pass 16 KiB alignment. Desktop checks cover 699 matching complete
-frames with the published module and all
-293 source mode/level combinations over 4,096 RGB12 colors. No Android device
-was connected for a new runtime check of this package.
+frames with the published module and all 293 source mode/level combinations
+over 4,096 RGB12 colors. The package was installed on the Pixel 10a on
+30 September and traversed the whole director through the checkerboard finale
+without an observed crash. Five-second measurements recorded 49.2–51.0 ticks/s,
+58.1–60.1 displayed frames/s and a peak Go heap of 53.3 MiB. These heap figures
+exclude native/GPU memory; runtime cadence is separate from visual fidelity.
 
 ## Device verification
 
