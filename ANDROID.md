@@ -1,6 +1,6 @@
 # Mental Hangover on Android
 
-The mobile host runs the same Go renderer, embedded assets and DCK v1.0.4
+The mobile host runs the same Go renderer, embedded assets and DCK v1.0.8
 music facade as the desktop command. Its clock remains at the original 50 Hz.
 The fixed 352 by 272 scene is centered with its aspect ratio intact. Android
 provides landscape orientation, immersive display, screen-awake behavior and
@@ -30,6 +30,11 @@ over 4,096 RGB12 colors. The package was installed on the Pixel 10a on
 without an observed crash. Five-second measurements recorded 49.2–51.0 ticks/s,
 58.1–60.1 displayed frames/s and a peak Go heap of 53.3 MiB. These heap figures
 exclude native/GPU memory; runtime cadence is separate from visual fidelity.
+
+The subsequent DCK v1.0.8 ARM64 package includes the shared row-palette material.
+It retains all 699 published-module frame samples and the independent CPU floor
+raster checks. Its four native ELF load segments and APK library placement pass
+16 KiB alignment; the row-color image remains 2,176 bytes.
 
 ## Device verification
 

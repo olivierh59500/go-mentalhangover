@@ -1,7 +1,7 @@
 # Mental Hangover Go
 
 Native Go/Ebitengine conversion of the supplied Amiga Mental Hangover
-production, using **Demo Construction Kit v1.0.4** and production-specific code.
+production, using **Demo Construction Kit v1.0.8** and production-specific code.
 
 ## Overview
 
@@ -100,6 +100,13 @@ projection, clipping, UVs and original coordinate programs; the shared builder
 maps each vertex once and submits the same ordered triangles. All 699 sampled
 frames still match across the complete 24,001-tick traversal. Immediate contour
 drawing adds no working image or GPU pass.
+
+The finale uses DCK's `composite.PaletteGrid` in one-column row mode. Its original
+column mask and two RGB12 colors per row drive the same checkerboard material;
+the shared pass owns the 2,176-byte row bank and supports continuous or binary
+control with configurable channels and offsets. All 699 sampled full frames
+still match through 24,001 drawn ticks. The independent CPU floor raster also
+matches at the source's palette/ball transition ticks.
 
 [Scene inventory](SCENES.md) · [Source manifest](reference/sources.json)
 

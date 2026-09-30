@@ -6,33 +6,25 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	kit "github.com/olivierh59500/democonstructionkit"
+	"github.com/olivierh59500/democonstructionkit/composite"
 	"github.com/olivierh59500/democonstructionkit/render"
 	"github.com/olivierh59500/go-mentalhangover/internal/source"
 )
 
 type finaleEffect struct {
-	clock                          *finaleClock
-	logo, logoLayer, columns, rows *ebiten.Image
-	floorShader                    *ebiten.Shader
-	balls                          []*ebiten.Image
-	batch                          *render.Batch
-	palette                        *copperPalette
-	pixels                         []byte
-	floorVertices                  [4]ebiten.Vertex
+	clock                    *finaleClock
+	logo, logoLayer, columns *ebiten.Image
+	floor                    *composite.PaletteGrid
+	balls                    []*ebiten.Image
+	batch                    *render.Batch
+	palette                  *copperPalette
+	colors                   [2][]color.NRGBA
 }
-
-const finaleFloorShader = `//kage:unit pixels
-package main
-func Fragment(dst vec4, src vec2, color vec4) vec4 {
-    y := floor((src - imageSrc0Origin()).y) + 0.5
-    a := imageSrc1At(imageSrc0Origin() + vec2(0.5, y))
-    b := imageSrc1At(imageSrc0Origin() + vec2(1.5, y))
-    return mix(a, b, imageSrc0At(src).r)
-}
-`
 
 func newFinale(data source.FinaleData, palette *copperPalette) (*finaleEffect, error) {
-	shader, err := ebiten.NewShader([]byte(finaleFloorShader))
+	floor, err := composite.NewPaletteGrid(composite.PaletteGridConfig{
+		Width: Width, Height: Height, Columns: 1, Rows: Height, ControlChannel: composite.BitplaneRed,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -45,10 +37,8 @@ func newFinale(data source.FinaleData, palette *copperPalette) (*finaleEffect, e
 		}
 	}
 	e := &finaleEffect{clock: newFinaleClock(data), logo: ebiten.NewImageFromImage(data.Logo), logoLayer: render.NewSurface(Width, Height),
-		columns: ebiten.NewImageFromImage(mask), rows: render.NewSurface(2, Height), floorShader: shader,
-		batch: render.NewBatch(256), palette: palette, pixels: make([]byte, 2*Height*4)}
-	e.floorVertices = [4]ebiten.Vertex{render.Vertex(0, 0, 0, 0, color.White), render.Vertex(Width, 0, Width, 0, color.White),
-		render.Vertex(0, Height, 0, Height, color.White), render.Vertex(Width, Height, Width, Height, color.White)}
+		columns: ebiten.NewImageFromImage(mask), floor: floor, batch: render.NewBatch(256), palette: palette,
+		colors: [2][]color.NRGBA{make([]color.NRGBA, Height), make([]color.NRGBA, Height)}}
 	for _, ball := range data.Balls {
 		e.balls = append(e.balls, ebiten.NewImageFromImage(ball))
 	}
@@ -61,20 +51,19 @@ func newFinale(data source.FinaleData, palette *copperPalette) (*finaleEffect, e
 func (e *finaleEffect) Update(kit.Frame) error {
 	e.clock.Step()
 	c := e.clock
-	clear(e.pixels)
+	clear(e.colors[0])
+	clear(e.colors[1])
 	if c.tick >= 64 {
 		for y := 166; y < Height; y++ {
 			a, b := c.rowColors(y)
 			first, second := source.RGB12(a), source.RGB12(b)
-			i := y * 8
-			e.pixels[i], e.pixels[i+1], e.pixels[i+2], e.pixels[i+3] = first.R, first.G, first.B, 255
-			e.pixels[i+4], e.pixels[i+5], e.pixels[i+6], e.pixels[i+7] = second.R, second.G, second.B, 255
+			e.colors[0][y] = color.NRGBA{R: first.R, G: first.G, B: first.B, A: 255}
+			e.colors[1][y] = color.NRGBA{R: second.R, G: second.G, B: second.B, A: 255}
 		}
 	}
 	// Only a two-color row bank changes. The original column mask stays on the
 	// GPU, avoiding a full-screen CPU raster and upload on every PAL update.
-	e.rows.WritePixels(e.pixels)
-	return nil
+	return e.floor.SetColors(e.colors[0], e.colors[1])
 }
 
 func (e *finaleEffect) Draw(dst *ebiten.Image) {
@@ -99,13 +88,14 @@ func (e *finaleEffect) Draw(dst *ebiten.Image) {
 }
 
 func (e *finaleEffect) drawFloor(dst *ebiten.Image) {
-	op := ebiten.DrawTrianglesShaderOptions{Images: [4]*ebiten.Image{e.columns, e.rows}}
-	dst.DrawTrianglesShader(e.floorVertices[:], []uint16{0, 1, 2, 1, 3, 2}, e.floorShader, &op)
+	if err := e.floor.Draw(dst, e.columns, nil, composite.PaletteGridState{}); err != nil {
+		panic(err)
+	}
 }
 
 func (e *finaleEffect) Close() {
-	for _, img := range append(e.balls, e.logo, e.logoLayer, e.columns, e.rows) {
+	for _, img := range append(e.balls, e.logo, e.logoLayer, e.columns) {
 		img.Deallocate()
 	}
-	e.floorShader.Deallocate()
+	e.floor.Close()
 }
