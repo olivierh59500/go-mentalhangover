@@ -77,6 +77,12 @@ palette recipes and choreography. Shared `WordProgram` advances their cue words.
 All 152 original projection poses and the full 699-frame sample set match.
 The local per-point and per-face loops and unused BOB clipper were removed.
 
+The published 1.0.12 ARM64 package passed ELF/ZIP 16 KiB alignment and ran its
+changed object families on Pixel 10a from a muted checkpoint. Samples measured
+49.9–51.0 TPS and 59.8–60.0 FPS without an observed fatal error, with 50.4 MiB
+peak Go heap. These figures exclude native/GPU memory and are runtime checks,
+separate from visual-reference comparisons.
+
 The independent asset preview renders the original four-plane eagle, interleaved
 three-plane serif font and 135 original star headers through DCK. The stars
 retain their three fixed horizontal velocities and byte wraps at 50 Hz.
