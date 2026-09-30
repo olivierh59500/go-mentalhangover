@@ -2,7 +2,6 @@ package demo
 
 import (
 	"image"
-	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	kit "github.com/olivierh59500/democonstructionkit"
@@ -11,26 +10,20 @@ import (
 	"github.com/olivierh59500/go-mentalhangover/internal/source"
 )
 
-// circleEffect binds the outline-font's polar painter to scrolling.New. Text
-// transport and curve controls remain the authored byte-sized source program.
+// circleEffect supplies decoded artwork, curve controls and layer composition
+// to DCK's shared byte-window transport and contour-font scrolling mode.
 type circleEffect struct {
-	clock                          *circleClock
-	text                           *scrolling.Scrolling
-	batch                          *render.Batch
-	white, layer, mountain, raster *ebiten.Image
-	palette                        *copperPalette
+	clock                   *circleClock
+	text                    *scrolling.Scrolling
+	layer, mountain, raster *ebiten.Image
+	palette                 *copperPalette
 }
 
 func newCircle(data source.CircleData, palette *copperPalette) (*circleEffect, error) {
-	e := &circleEffect{clock: newCircleClock(data), batch: render.NewBatch(1024), white: ebiten.NewImage(1, 1),
+	e := &circleEffect{clock: newCircleClock(data),
 		layer: render.NewSurface(Width, Height), mountain: ebiten.NewImageFromImage(data.Mountain), raster: ebiten.NewImageFromImage(data.Raster), palette: palette}
-	e.white.Fill(color.White)
-	e.batch.Options.FillRule = ebiten.FillRuleEvenOdd
-	glyphs := make([]scrolling.Glyph, 8)
-	for i := range glyphs {
-		glyphs[i] = scrolling.Glyph{Advance: 30}
-	}
-	text, err := scrolling.New(scrolling.Config{Glyphs: glyphs})
+	paint := source.RGB12(0x3ad)
+	text, err := newOutlineScroll(data.Glyphs, 30, func(slot int) byte { return e.clock.letters[slot] }, e.clock.Point, nil, &paint)
 	if err != nil {
 		e.Close()
 		return nil, err
@@ -39,17 +32,12 @@ func newCircle(data source.CircleData, palette *copperPalette) (*circleEffect, e
 	return e, nil
 }
 
-func (e *circleEffect) Update(kit.Frame) error { e.clock.Step(); return nil }
-
-func (e *circleEffect) paint(_ *ebiten.Image, s scrolling.Sample, _ ebiten.DrawImageOptions) {
-	glyph := e.clock.data.Glyphs[e.clock.letters[s.Index]]
-	vertex := func(p source.PolarGlyphPoint) ebiten.Vertex {
-		v := e.clock.Point(s.Index, p)
-		return render.Vertex(float64(v.X), float64(v.Y), 0, 0, source.RGB12(0x3ad))
+func (e *circleEffect) Update(f kit.Frame) error {
+	if err := e.text.Err(); err != nil {
+		return err
 	}
-	for _, contour := range glyph.Contours {
-		e.batch.Fan(len(contour)-1, func(i int) ebiten.Vertex { return vertex(contour[i]) })
-	}
+	e.clock.Step()
+	return e.text.Update(f)
 }
 
 func (e *circleEffect) Draw(dst *ebiten.Image) {
@@ -61,11 +49,7 @@ func (e *circleEffect) Draw(dst *ebiten.Image) {
 	if c.active {
 		e.layer.Clear()
 		view := e.layer.SubImage(image.Rect(0, 8, Width, 208)).(*ebiten.Image)
-		e.batch.Begin(view, e.white)
-		state := scrolling.IdentityState()
-		state.Paint = e.paint
-		e.text.DrawAt(view, state)
-		e.batch.Flush()
+		e.text.Draw(view)
 		op := ebiten.DrawImageOptions{}
 		op.GeoM.Translate(0, -2)
 		op.ColorScale.Scale(0, 0.6, float32(11.0/13.0), 1)
@@ -81,7 +65,7 @@ func (e *circleEffect) Close() {
 	if e.text != nil {
 		e.text.Close()
 	}
-	for _, img := range []*ebiten.Image{e.white, e.layer, e.mountain, e.raster} {
+	for _, img := range []*ebiten.Image{e.layer, e.mountain, e.raster} {
 		if img != nil {
 			img.Deallocate()
 		}

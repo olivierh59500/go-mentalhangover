@@ -1,6 +1,10 @@
 package demo
 
-import "github.com/olivierh59500/go-mentalhangover/internal/source"
+import (
+	"github.com/olivierh59500/democonstructionkit/motion"
+	"github.com/olivierh59500/democonstructionkit/scrolltext"
+	"github.com/olivierh59500/go-mentalhangover/internal/source"
+)
 
 type perspectiveClock struct {
 	data          source.PerspectiveData
@@ -13,10 +17,21 @@ type perspectiveClock struct {
 	done          bool
 	pointMasks    [Width * 200]byte
 	touched       []int
+	window        *scrolltext.ByteWindow
+	projection    *motion.RationalGrid
 }
 
 func newPerspectiveClock(data source.PerspectiveData) *perspectiveClock {
 	c := &perspectiveClock{data: data, local: -1, touched: make([]int, 0, len(data.Points))}
+	var err error
+	c.window, err = scrolltext.NewByteWindow(scrolltext.ByteWindowConfig{Text: data.Text, Slots: len(c.letters), Step: -2, Advance: 22, Crossing: scrolltext.BelowZero})
+	if err != nil {
+		panic(err)
+	}
+	c.projection, err = motion.NewRationalGrid(motion.RationalGridConfig{X: [3]int64{-81920, -4096, 1536}, Y: [3]int64{71680, -2560, -819}, Denominator: [3]int64{330, 10, 5}, Center: [2]int64{173, 108}, WordBits: 16})
+	if err != nil {
+		panic(err)
+	}
 	c.rasterizePoints()
 	return c
 }
@@ -59,18 +74,15 @@ func (c *perspectiveClock) Step() bool {
 		}
 		return true
 	}
-	c.position -= 2
-	if int8(c.position) < 0 {
-		c.position += 22
-		c.cursor++
+	if _, err := c.window.Step(); err != nil {
+		panic(err)
 	}
-	for i := range c.letters {
-		if c.cursor+i >= len(c.data.Text) || c.data.Text[c.cursor+i] >= 128 {
-			c.phase = 3
-			c.local = -1
-			return true
-		}
-		c.letters[i] = c.data.Text[c.cursor+i]
+	c.position, c.cursor = c.window.Position(), c.window.Cursor()
+	copy(c.letters[:], c.window.Letters())
+	if c.window.Finished() {
+		c.phase = 3
+		c.local = -1
+		return true
 	}
 	c.advancePoints()
 	return true
@@ -116,10 +128,9 @@ func (c *perspectiveClock) rasterizePoints() {
 // Perspective outlines use the source's precomputed eleven-row, 280-column
 // lookup. Integer division and each row's start values remain independent.
 func (c *perspectiveClock) Point(slot int, p source.PolarGlyphPoint) source.Point2 {
-	column := int(c.position) + slot*22 + int(p.Angle)
-	row := int(p.Row)
-	denominator := 330 + row*10 + column*5
-	x := -81920 - row*4096 + column*1536
-	y := 71680 - row*2560 - column*819
-	return source.Point2{X: int16(x/denominator) + 173, Y: int16(y/denominator) + 108}
+	point, ok := c.projection.Point(int64(c.position)+int64(slot)*22+int64(p.Angle), int64(p.Row))
+	if !ok {
+		panic("demo: invalid perspective glyph projection")
+	}
+	return source.Point2{X: int16(point.X), Y: int16(point.Y)}
 }

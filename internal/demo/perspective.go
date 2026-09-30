@@ -34,29 +34,20 @@ func newPerspective(data source.PerspectiveData, palette *copperPalette) (*persp
 		colors.SetNRGBA(0, y, source.RGB12(uint16(level)))
 	}
 	e.fontPalette = ebiten.NewImageFromImage(colors)
-	e.batch.Options.FillRule = ebiten.FillRuleEvenOdd
-	glyphs := make([]scrolling.Glyph, 8)
-	for i := range glyphs {
-		glyphs[i] = scrolling.Glyph{Advance: 22}
-	}
 	var err error
-	e.text, err = scrolling.New(scrolling.Config{Glyphs: glyphs})
+	e.text, err = newOutlineScroll(data.Glyphs, 22, func(slot int) byte { return e.clock.letters[slot] }, e.clock.Point, e.fontPalette, nil)
 	if err != nil {
 		e.Close()
 		return nil, err
 	}
 	return e, nil
 }
-func (e *perspectiveEffect) Update(kit.Frame) error { e.clock.Step(); return nil }
-func (e *perspectiveEffect) paint(_ *ebiten.Image, s scrolling.Sample, _ ebiten.DrawImageOptions) {
-	glyph := e.clock.data.Glyphs[e.clock.letters[s.Index]]
-	vertex := func(p source.PolarGlyphPoint) ebiten.Vertex {
-		v := e.clock.Point(s.Index, p)
-		return render.Vertex(float64(v.X), float64(v.Y), 0.5, float64(v.Y), color.White)
+func (e *perspectiveEffect) Update(f kit.Frame) error {
+	if err := e.text.Err(); err != nil {
+		return err
 	}
-	for _, contour := range glyph.Contours {
-		e.batch.Fan(len(contour)-1, func(i int) ebiten.Vertex { return vertex(contour[i]) })
-	}
+	e.clock.Step()
+	return e.text.Update(f)
 }
 func (e *perspectiveEffect) Draw(dst *ebiten.Image) {
 	c := e.clock
@@ -66,11 +57,7 @@ func (e *perspectiveEffect) Draw(dst *ebiten.Image) {
 	e.layer.Clear()
 	view := e.layer.SubImage(image.Rect(0, 8, Width, 208)).(*ebiten.Image)
 	if c.phase == 2 {
-		e.batch.Begin(view, e.fontPalette)
-		state := scrolling.IdentityState()
-		state.Paint = e.paint
-		e.text.DrawAt(view, state)
-		e.batch.Flush()
+		e.text.Draw(view)
 	}
 	// Source point colors use OR, independently of the outline parity mask.
 	e.batch.Options.FillRule = ebiten.FillRuleFillAll
@@ -80,7 +67,6 @@ func (e *perspectiveEffect) Draw(dst *ebiten.Image) {
 		e.batch.Rect(float64(index%Width), float64(index/Width+8), 1, 1, image.Rect(0, 0, 1, 1), source.RGB12(colors[c.pointMasks[index]]))
 	}
 	e.batch.Flush()
-	e.batch.Options.FillRule = ebiten.FillRuleEvenOdd
 	e.palette.Draw(dst, e.layer, source.PaletteScaled32, c.level)
 	border := source.RGB12(uint16(c.border))
 	e.batch.Options.FillRule = ebiten.FillRuleFillAll
@@ -88,7 +74,6 @@ func (e *perspectiveEffect) Draw(dst *ebiten.Image) {
 	e.batch.Rect(0, 7, Width, 1, image.Rect(0, 0, 1, 1), border)
 	e.batch.Rect(0, 209, Width, 1, image.Rect(0, 0, 1, 1), border)
 	e.batch.Flush()
-	e.batch.Options.FillRule = ebiten.FillRuleEvenOdd
 }
 func (e *perspectiveEffect) Close() {
 	if e.text != nil {

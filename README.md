@@ -1,7 +1,7 @@
 # Mental Hangover Go
 
 Native Go/Ebitengine conversion of the supplied Amiga Mental Hangover
-production, using **Demo Construction Kit v1.0.8** and production-specific code.
+production, using **Demo Construction Kit v1.0.10** and production-specific code.
 
 ## Overview
 
@@ -49,6 +49,17 @@ approximately 50 updates/s. This is a native reconstruction: GPU polygon edges a
 deterministic final-ball seeds differ from cycle-accurate Amiga emulation.
 Detailed numeric evidence and measured audio differences are documented in
 [verification](reference/VERIFICATION.md).
+
+The circular and perspective text now use DCK's `font.ContourBank`, owned
+`scrolling.Mode.Contours` and authored `GlyphWindow`. The shared `ByteWindow`
+handles signed-byte positions, command lookahead, pauses and completion; shared
+`TablePolar`/`RationalGrid` maps preserve original integer projection and wrapping.
+The demo supplies artwork, wave/profile tables, coefficients, scene fades and
+layer order. Its local polygon painters and dummy glyph setup are removed.
+All 699 sampled complete RGBA frames match the preceding renderer over 24,001
+drawn updates, including 69 samples in those two scenes. Original CPU fixtures
+for their transport, profiles and projections continue to pass. No intermediate
+image or shader is added by this migration.
 
 The independent asset preview renders the original four-plane eagle, interleaved
 three-plane serif font and 135 original star headers through DCK. The stars

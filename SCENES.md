@@ -17,9 +17,9 @@ disk-loading holds are calibrated to the recording, not filesystem speed.
 | 123–153 s | Filled-vector introduction, cube and faceted solid | Retained triangle batch, palette atlas, cue clock | Original edge faces, mirrored sine bank and 54-phase rasters |
 | 153–247 s | Stencil interlude, two arrow passes, yellow cube, brown facets, paired boxes, pyramid, hollow frame and color block | Triangle batches with parity masks, repeating materials, cue clocks | Original packed contours, degree table, 128-level depth palette and 25/50 Hz cadences |
 | About 250–285 s | Steered point field with greetings and member text pages | Cached bitmap pages, retained pixel batch | Original reciprocal projection, XOR collisions, steering and separate 32-step palettes |
-| 288.76–355.58 s | Circular text over a raster-colored mountain silhouette | Scrolling facade with outline painter, parity batch, retained image layers | Original byte controls, signed wave addressing, polar lookup and mountain occlusion |
+| 288.76–355.58 s | Circular text over a raster-colored mountain silhouette | Owned contour scrolling mode, ByteWindow, TablePolar, retained image layers | Original font/wave/profile tables, command payloads, phase fades and mountain occlusion |
 | 357.58–381.46 s | Contact text and projected blue spheres | Projected sprite batches, held image layers | Authored positions, size bank, steering and hardware text columns |
-| 382.46–416.00 s | Perspective blue text and points | Scrolling outline painter, projected geometry, pixel batch | Original font, perspective lookup and message transport |
+| 382.46–416.00 s | Perspective blue text and points | Owned contour scrolling mode, ByteWindow, RationalGrid, pixel batch | Original font and projection coefficients; separate point-plane OR controller remains a candidate |
 | 418.96–430.72 s | Final reminder card and disk-loading interval | Bitmap pages, cue ranges | Original flash/fades, held reminder and last loader hold |
 | 430.72 s onward | Scoopex logo, perspective checkerboard and bouncing balls | Retained mask and row-palette shader, projected sprite batches | Original palettes, logo and verified floor/ball motion |
 
