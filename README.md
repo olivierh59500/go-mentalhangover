@@ -43,9 +43,9 @@ successful original CPU updates, including its pause and form-change commands.
 The late units also retain their independently verified sphere projections,
 perspective lookup, point-plane OR operations, depth queue and copper colors.
 The reminder stays visible through the final disk-transfer hold, and the ending
-begins at 430.72 seconds. Native captures cover the entire sequence; a complete
-earlier Pixel run reached the indefinite ending with audio active and approximately
-50 updates/s. This is a native reconstruction: GPU polygon edges and the
+begins at 430.72 seconds. Native captures cover the entire sequence. An earlier
+complete Pixel run reached the indefinite ending with audio active and
+approximately 50 updates/s. This is a native reconstruction: GPU polygon edges and the
 deterministic final-ball seeds differ from cycle-accurate Amiga emulation.
 Detailed numeric evidence and measured audio differences are documented in
 [verification](reference/VERIFICATION.md).
@@ -87,7 +87,8 @@ clock or changing a vector pose.
 The six copper operations now use DCK's `composite.QuantizedColor`; the production
 supplies its grid, threshold, integer ratios and operation order. All 699 sampled
 full frames match the previous renderer across 24,001 drawn ticks and 41 units.
-The shared pass owns one shader without an additional image surface. Two native
+The shared pass owns one shader without an additional image surface. Two muted
+native
 CPU submission runs per implementation measured mean draws of 37.82–38.63
 microseconds before and 38.27–39.70 after; those timings exclude GPU completion
 and readback. Reproduce frame fingerprints and optional submission timings with
