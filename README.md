@@ -1,7 +1,7 @@
 # Mental Hangover Go
 
 Native Go/Ebitengine conversion of the supplied Amiga Mental Hangover
-production, using **Demo Construction Kit v1.0.2** and production-specific code.
+production, using **Demo Construction Kit v1.0.4** and production-specific code.
 
 ## Overview
 
@@ -93,6 +93,13 @@ CPU submission runs per implementation measured mean draws of 37.82–38.63
 microseconds before and 38.27–39.70 after; those timings exclude GPU completion
 and readback. Reproduce frame fingerprints and optional submission timings with
 `go run ./cmd/checkframes -output captures/color-reuse.json -timing`.
+
+Author vectors, BOBs, filled solids and patterned, circular and perspective
+contours use DCK's `render.Batch.Fan`. The production retains its word-sized
+projection, clipping, UVs and original coordinate programs; the shared builder
+maps each vertex once and submits the same ordered triangles. All 699 sampled
+frames still match across the complete 24,001-tick traversal. Immediate contour
+drawing adds no working image or GPU pass.
 
 [Scene inventory](SCENES.md) · [Source manifest](reference/sources.json)
 

@@ -50,9 +50,7 @@ func (e *filledSolidEffect) Draw(dst *ebiten.Image) {
 			x, y := float64(p.X)-176, float64(p.Y)-1
 			return render.Vertex(x, y, float64(e.phase*3)+float64(face.Material)-0.5, y, color.White)
 		}
-		for i := 1; i+1 < len(face.Vertices); i++ {
-			e.batch.Triangle(vertex(a), vertex(e.points[face.Vertices[i]]), vertex(e.points[face.Vertices[i+1]]))
-		}
+		e.batch.Fan(len(face.Vertices), func(i int) ebiten.Vertex { return vertex(e.points[face.Vertices[i]]) })
 	}
 	e.batch.Flush()
 }

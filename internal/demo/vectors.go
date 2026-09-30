@@ -60,14 +60,10 @@ func (effect *vectorEffect) Draw(dst *ebiten.Image) {
 	effect.batch.Begin(dst, effect.white)
 	for _, contour := range effect.model.Contours {
 		indices := contour.Indices[:len(contour.Indices)-1]
-		origin := effect.points[indices[0]]
-		first := render.Vertex(float64(origin.X), float64(origin.Y), 0, 0, effect.color)
-		for i := 1; i+1 < len(indices); i++ {
-			b, c := effect.points[indices[i]], effect.points[indices[i+1]]
-			effect.batch.Triangle(first,
-				render.Vertex(float64(b.X), float64(b.Y), 0, 0, effect.color),
-				render.Vertex(float64(c.X), float64(c.Y), 0, 0, effect.color))
-		}
+		effect.batch.Fan(len(indices), func(i int) ebiten.Vertex {
+			p := effect.points[indices[i]]
+			return render.Vertex(float64(p.X), float64(p.Y), 0, 0, effect.color)
+		})
 	}
 	effect.batch.Flush()
 }

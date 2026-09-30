@@ -48,10 +48,7 @@ func (e *circleEffect) paint(_ *ebiten.Image, s scrolling.Sample, _ ebiten.DrawI
 		return render.Vertex(float64(v.X), float64(v.Y), 0, 0, source.RGB12(0x3ad))
 	}
 	for _, contour := range glyph.Contours {
-		first := vertex(contour[0])
-		for i := 1; i+1 < len(contour)-1; i++ {
-			e.batch.Triangle(first, vertex(contour[i]), vertex(contour[i+1]))
-		}
+		e.batch.Fan(len(contour)-1, func(i int) ebiten.Vertex { return vertex(contour[i]) })
 	}
 }
 

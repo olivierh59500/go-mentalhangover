@@ -109,9 +109,7 @@ func (e *bobEffect) Draw(dst *ebiten.Image) {
 				px, py := float64(x)+point.x, float64(y)+point.y
 				return render.Vertex(px, py, float64(face.material)-0.5, py, color.White)
 			}
-			for j := 1; j+1 < face.count; j++ {
-				e.batch.Triangle(vertex(face.points[0]), vertex(face.points[j]), vertex(face.points[j+1]))
-			}
+			e.batch.Fan(face.count, func(j int) ebiten.Vertex { return vertex(face.points[j]) })
 		}
 	}
 	e.batch.Flush()

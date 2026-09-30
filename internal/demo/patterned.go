@@ -89,10 +89,7 @@ func (e *patternedEffect) Draw(dst *ebiten.Image) {
 		}
 		e.batch.Begin(view, e.textures[int(face.Material)-1])
 		for _, contour := range face.Contours {
-			first := vertex(e.points[contour[0]])
-			for i := 1; i+1 < len(contour)-1; i++ {
-				e.batch.Triangle(first, vertex(e.points[contour[i]]), vertex(e.points[contour[i+1]]))
-			}
+			e.batch.Fan(len(contour)-1, func(i int) ebiten.Vertex { return vertex(e.points[contour[i]]) })
 		}
 		e.batch.Flush()
 	}

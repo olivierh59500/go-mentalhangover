@@ -55,10 +55,7 @@ func (e *perspectiveEffect) paint(_ *ebiten.Image, s scrolling.Sample, _ ebiten.
 		return render.Vertex(float64(v.X), float64(v.Y), 0.5, float64(v.Y), color.White)
 	}
 	for _, contour := range glyph.Contours {
-		first := vertex(contour[0])
-		for i := 1; i+1 < len(contour)-1; i++ {
-			e.batch.Triangle(first, vertex(contour[i]), vertex(contour[i+1]))
-		}
+		e.batch.Fan(len(contour)-1, func(i int) ebiten.Vertex { return vertex(contour[i]) })
 	}
 }
 func (e *perspectiveEffect) Draw(dst *ebiten.Image) {
