@@ -1,6 +1,10 @@
 package demo
 
-import "github.com/olivierh59500/go-mentalhangover/internal/source"
+import (
+	"github.com/olivierh59500/democonstructionkit/motion"
+	"github.com/olivierh59500/democonstructionkit/sprites"
+	"github.com/olivierh59500/go-mentalhangover/internal/source"
+)
 
 type starPagePhase struct {
 	name                string
@@ -33,11 +37,23 @@ type starPageClock struct {
 	frame, phase, local        int
 	page, starLevel, textLevel int
 	done                       bool
+	plane                      *sprites.IndexedPointPlane
+	velocity                   *motion.WordEulerVelocity
 }
 
 func newStarPageClock(data source.StarPages) *starPageClock {
-	return &starPageClock{data: data, angles: [3]int16{0, -180, 0}, masks: make([]byte, Width*286),
-		touched: make([]int, 0, 260), frame: -1, page: -1}
+	c := &starPageClock{data: data, angles: [3]int16{0, -180, 0}, frame: -1, page: -1}
+	var err error
+	c.plane, err = newStarPointPlane(data.Points, func() [3]int16 { return c.offset })
+	if err != nil {
+		panic(err)
+	}
+	c.masks = c.plane.Masks()
+	c.velocity, err = motion.NewWordEulerVelocity(motion.WordEulerVelocityConfig{Sines: data.Sines, Period: 720, Quantum: 2, Quarter: 180, OutputShift: [3]uint8{11, 11, 9}, PhasePolicy: motion.WordPhaseNormalized})
+	if err != nil {
+		panic(err)
+	}
+	return c
 }
 
 func (c *starPageClock) Step() bool {
@@ -84,60 +100,45 @@ func (c *starPageClock) Step() bool {
 			c.angles[i] += 720
 		}
 	}
-	velocity := starPageVelocity(c.angles, c.data.Sines)
+	velocity, ok := c.velocity.Sample(c.angles)
+	if !ok {
+		panic("demo: invalid star velocity phase")
+	}
 	for i, v := range velocity {
 		c.offset[i] = int16(uint16(c.offset[i]) + uint16(v))
 	}
-	for _, index := range c.touched {
-		c.masks[index] = 0
+	if err := c.plane.Sample(); err != nil {
+		panic(err)
 	}
-	c.touched = c.touched[:0]
-	projectStarPages(c.data.Points, c.offset, c.masks, &c.touched)
+	c.touched = c.plane.Touched()
 	return true
 }
 
 // starPageVelocity translates only the three matrix products consumed as
 // source velocities, preserving their distinct eleven/nine-bit truncations.
 func starPageVelocity(angles [3]int16, sines []int16) [3]int16 {
-	var wave [6]int16
-	for i, a := range angles {
-		n := int(a) &^ 1
-		wave[i*2] = sines[n/2]
-		wave[i*2+1] = sines[((n+180)%720)/2]
+	velocity, err := motion.NewWordEulerVelocity(motion.WordEulerVelocityConfig{Sines: sines, Period: 720, Quantum: 2, Quarter: 180, OutputShift: [3]uint8{11, 11, 9}, PhasePolicy: motion.WordPhaseNormalized})
+	if err != nil {
+		panic(err)
 	}
-	sx, cx, sy, cy, sz, cz := wave[0], wave[1], wave[2], wave[3], wave[4], wave[5]
-	mul := func(a, b int16) int32 { return int32(a) * int32(b) }
-	high := func(v int32) int16 { return int16(v >> 16) }
-	return [3]int16{
-		int16(int32(high(mul(cx, cy))) >> 11),
-		int16(int32(high(mul(sx, cz)-mul(high(mul(sz, sy)<<1), cx))) >> 11),
-		int16(int32(high(mul(sx, sz)+mul(high(mul(cz, sy)<<1), cx))) >> 9),
+	v, ok := velocity.Sample(angles)
+	if !ok {
+		panic("demo: invalid star velocity phase")
 	}
+	return v
 }
 
 // projectStarPages keeps the original depth reciprocal lookup and two-plane
 // XOR, including cancellations when particles occupy the same output pixel.
 func projectStarPages(points []source.Point3, offset [3]int16, masks []byte, touched *[]int) {
-	for _, p := range points {
-		x := int32(int16((uint16(p.X)+uint16(offset[0]))&511) - 256)
-		y := int32(int16((uint16(p.Y)+uint16(offset[1]))&511) - 256)
-		z := (uint16(p.Z) + uint16(offset[2])) & 2047
-		factor := int32(262144 / (int(z) + 10))
-		px, py := int(int16(x*factor>>9))+176, int(int16(y*factor>>9))+143
-		if px < 0 || px >= Width || py < 0 || py >= 286 {
-			continue
-		}
-		mask := byte(0)
-		if z < 1700 {
-			mask |= 1
-		}
-		if z > 1000 {
-			mask |= 2
-		}
-		index := py*Width + px
-		if masks[index] == 0 {
-			*touched = append(*touched, index)
-		}
-		masks[index] ^= mask
+	plane, err := newStarPointPlane(points, func() [3]int16 { return offset })
+	if err != nil {
+		panic(err)
 	}
+	defer plane.Close()
+	if err := plane.Sample(); err != nil {
+		panic(err)
+	}
+	copy(masks, plane.Masks())
+	*touched = append((*touched)[:0], plane.Touched()...)
 }

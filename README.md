@@ -1,7 +1,7 @@
 # Mental Hangover Go
 
 Native Go/Ebitengine conversion of the supplied Amiga Mental Hangover
-production, using **Demo Construction Kit v1.0.10** and production-specific code.
+production, using **Demo Construction Kit v1.0.11** and production-specific code.
 
 ## Overview
 
@@ -60,6 +60,14 @@ All 699 sampled complete RGBA frames match the preceding renderer over 24,001
 drawn updates, including 69 samples in those two scenes. Original CPU fixtures
 for their transport, profiles and projections continue to pass. No intermediate
 image or shader is added by this migration.
+
+The greetings and perspective points share `sprites.IndexedPointPlane` with
+independent XOR/OR collision policies and explicit word-sized projection. Only
+touched pixels are cleared; repeated pixel visits cannot double-blend a canceled
+point. `motion.WordEulerVelocity` preserves both native steering policies.
+The contact spheres use `sprites.DepthQueue` and the common atlas renderer,
+retaining the original equality distinction at the upper depth boundary.
+All 699 complete-frame samples and the original point/queue fixtures match.
 
 The independent asset preview renders the original four-plane eagle, interleaved
 three-plane serif font and 135 original star headers through DCK. The stars

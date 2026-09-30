@@ -15,17 +15,14 @@ import (
 )
 
 type starPageEffect struct {
-	clock            *starPageClock
-	pages            []*ebiten.Image
-	fontImage, white *ebiten.Image
-	palette          *copperPalette
-	batch            *render.Batch
+	clock     *starPageClock
+	pages     []*ebiten.Image
+	fontImage *ebiten.Image
+	palette   *copperPalette
 }
 
 func newStarPages(data source.StarPages, palette *copperPalette) (*starPageEffect, error) {
-	e := &starPageEffect{clock: newStarPageClock(data), palette: palette, batch: render.NewBatch(1024),
-		fontImage: ebiten.NewImageFromImage(data.Font), white: ebiten.NewImage(1, 1)}
-	e.white.Fill(color.White)
+	e := &starPageEffect{clock: newStarPageClock(data), palette: palette, fontImage: ebiten.NewImageFromImage(data.Font)}
 	glyphs := make(map[rune]font.Glyph, 59)
 	for i, a := range data.Advances {
 		glyphs[rune(i+32)] = font.Glyph{Rect: image.Rect(i*16, 0, i*16+16, 14), Advance: float64(a)}
@@ -67,19 +64,10 @@ func (e *starPageEffect) Draw(dst *ebiten.Image) {
 	for i, word := range c.data.StarColors {
 		colors[i+1] = source.RGB12(source.PaletteWord(word, source.PaletteScaled32, c.starLevel))
 	}
-	e.batch.Begin(dst, e.white)
-	for _, index := range c.touched {
-		mask := c.masks[index]
-		if mask == 0 {
-			continue
-		}
-		x, y := index%Width, index/Width-10
-		if y < 0 || y >= Height {
-			continue
-		}
-		e.batch.Rect(float64(x), float64(y), 1, 1, image.Rect(0, 0, 1, 1), colors[mask])
+	if err := c.plane.SetPalette(colors[:]); err != nil {
+		panic(err)
 	}
-	e.batch.Flush()
+	c.plane.Draw(dst)
 	if c.page >= 0 {
 		e.palette.Draw(dst, e.pages[c.page], source.PaletteScaled32, c.textLevel)
 	}
@@ -89,9 +77,7 @@ func (e *starPageEffect) Close() {
 	for _, page := range e.pages {
 		page.Deallocate()
 	}
-	if e.white != nil {
-		e.white.Deallocate()
-	}
+	e.clock.plane.Close()
 	if e.fontImage != nil {
 		e.fontImage.Deallocate()
 	}

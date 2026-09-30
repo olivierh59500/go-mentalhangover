@@ -21,8 +21,9 @@ type perspectiveEffect struct {
 }
 
 func newPerspective(data source.PerspectiveData, palette *copperPalette) (*perspectiveEffect, error) {
-	e := &perspectiveEffect{clock: newPerspectiveClock(data), white: ebiten.NewImage(1, 1), layer: render.NewSurface(Width, Height), batch: render.NewBatch(1024), palette: palette}
+	e := &perspectiveEffect{white: ebiten.NewImage(1, 1), layer: render.NewSurface(Width, Height), batch: render.NewBatch(8), palette: palette}
 	e.white.Fill(color.White)
+	e.clock = newPerspectiveClock(data, e.white)
 	colors := image.NewNRGBA(image.Rect(0, 0, 1, Height))
 	for y := 0; y < Height; y++ {
 		level := 0
@@ -60,13 +61,11 @@ func (e *perspectiveEffect) Draw(dst *ebiten.Image) {
 		e.text.Draw(view)
 	}
 	// Source point colors use OR, independently of the outline parity mask.
-	e.batch.Options.FillRule = ebiten.FillRuleFillAll
-	e.batch.Begin(view, e.white)
-	colors := [4]uint16{0, 0xfff, 0x68d, 0x359}
-	for _, index := range c.touched {
-		e.batch.Rect(float64(index%Width), float64(index/Width+8), 1, 1, image.Rect(0, 0, 1, 1), source.RGB12(colors[c.pointMasks[index]]))
+	colors := [4]color.NRGBA{source.RGB12(0), source.RGB12(0xfff), source.RGB12(0x68d), source.RGB12(0x359)}
+	if err := c.plane.SetPalette(colors[:]); err != nil {
+		panic(err)
 	}
-	e.batch.Flush()
+	c.plane.Draw(view)
 	e.palette.Draw(dst, e.layer, source.PaletteScaled32, c.level)
 	border := source.RGB12(uint16(c.border))
 	e.batch.Options.FillRule = ebiten.FillRuleFillAll
@@ -79,6 +78,7 @@ func (e *perspectiveEffect) Close() {
 	if e.text != nil {
 		e.text.Close()
 	}
+	e.clock.plane.Close()
 	e.white.Deallocate()
 	e.layer.Deallocate()
 	e.fontPalette.Deallocate()

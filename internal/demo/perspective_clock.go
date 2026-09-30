@@ -1,8 +1,10 @@
 package demo
 
 import (
+	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/olivierh59500/democonstructionkit/motion"
 	"github.com/olivierh59500/democonstructionkit/scrolltext"
+	"github.com/olivierh59500/democonstructionkit/sprites"
 	"github.com/olivierh59500/go-mentalhangover/internal/source"
 )
 
@@ -15,19 +17,29 @@ type perspectiveClock struct {
 	offset        [3]int16
 	level, border int
 	done          bool
-	pointMasks    [Width * 200]byte
+	pointMasks    []byte
 	touched       []int
 	window        *scrolltext.ByteWindow
 	projection    *motion.RationalGrid
+	plane         *sprites.IndexedPointPlane
 }
 
-func newPerspectiveClock(data source.PerspectiveData) *perspectiveClock {
+func newPerspectiveClock(data source.PerspectiveData, white ...*ebiten.Image) *perspectiveClock {
 	c := &perspectiveClock{data: data, local: -1, touched: make([]int, 0, len(data.Points))}
 	var err error
 	c.window, err = scrolltext.NewByteWindow(scrolltext.ByteWindowConfig{Text: data.Text, Slots: len(c.letters), Step: -2, Advance: 22, Crossing: scrolltext.BelowZero})
 	if err != nil {
 		panic(err)
 	}
+	var pixel *ebiten.Image
+	if len(white) > 0 {
+		pixel = white[0]
+	}
+	c.plane, err = newPerspectivePointPlane(data.Points, func() [3]int16 { return c.offset }, pixel)
+	if err != nil {
+		panic(err)
+	}
+	c.pointMasks = c.plane.Masks()
 	c.projection, err = motion.NewRationalGrid(motion.RationalGridConfig{X: [3]int64{-81920, -4096, 1536}, Y: [3]int64{71680, -2560, -819}, Denominator: [3]int64{330, 10, 5}, Center: [2]int64{173, 108}, WordBits: 16})
 	if err != nil {
 		panic(err)
@@ -98,31 +110,10 @@ func (c *perspectiveClock) advancePoints() {
 // The original two point planes combine coincident stars with bitwise OR.
 // Clear only touched pixels and reuse the bounded index list on each update.
 func (c *perspectiveClock) rasterizePoints() {
-	for _, index := range c.touched {
-		c.pointMasks[index] = 0
+	if err := c.plane.Sample(); err != nil {
+		panic(err)
 	}
-	c.touched = c.touched[:0]
-	for _, p := range c.data.Points {
-		z := (uint16(p.Z) + uint16(c.offset[2])) & 2047
-		factor := int32(263680 / (int(z) + 390))
-		x := int32(int16((uint16(p.X)+uint16(c.offset[0]))&1023) - 512)
-		y := int32(int16((uint16(p.Y)+uint16(c.offset[1]))&511) - 256)
-		px, py := int(int16(x*factor>>9))+176, int(int16(y*factor>>9))+100
-		if px < 0 || px >= Width || py < 0 || py >= 199 {
-			continue
-		}
-		mask := byte(2)
-		if z < 1000 {
-			mask = 1
-		} else if z >= 1700 {
-			mask = 3
-		}
-		index := py*Width + px
-		if c.pointMasks[index] == 0 {
-			c.touched = append(c.touched, index)
-		}
-		c.pointMasks[index] |= mask
-	}
+	c.touched = c.plane.Touched()
 }
 
 // Perspective outlines use the source's precomputed eleven-row, 280-column

@@ -1,6 +1,13 @@
 package demo
 
-import "github.com/olivierh59500/go-mentalhangover/internal/source"
+import (
+	"image"
+
+	"github.com/olivierh59500/democonstructionkit/geometry"
+	"github.com/olivierh59500/democonstructionkit/motion"
+	"github.com/olivierh59500/democonstructionkit/sprites"
+	"github.com/olivierh59500/go-mentalhangover/internal/source"
+)
 
 type contactPose struct {
 	x, y, frame, height int
@@ -15,12 +22,55 @@ type contactClock struct {
 	ballLevel, titleLevel int
 	poses                 [130]contactPose
 	done                  bool
+	velocity              *motion.WordEulerVelocity
+	queue                 *sprites.DepthQueue
+	projection            *motion.WrappedPointProjection
 }
 
 var contactPhaseFrames = [6]int{65, 249, 33, 749, 33, 65}
 
 func newContactClock(data source.ContactData) *contactClock {
-	return &contactClock{data: data, angles: [3]int16{0, 180, 0}, depth: 3250, local: -1}
+	c := &contactClock{data: data, angles: [3]int16{0, 180, 0}, depth: 3250, local: -1}
+	var err error
+	c.velocity, err = motion.NewWordEulerVelocity(motion.WordEulerVelocityConfig{Sines: data.Sines, Period: 720, Quantum: 2, Quarter: 180, OutputShift: [3]uint8{10, 10, 8}, PhasePolicy: motion.WordPhaseGuarded})
+	if err != nil {
+		panic(err)
+	}
+	c.projection, err = motion.NewWrappedPointProjection(motion.WrappedPointProjectionConfig{
+		Mask: [3]uint16{1023, 1023, 65535}, Bias: [2]int16{-512, -512},
+		Numerator: 263680, DepthBias: 90, Shift: 9, Center: image.Pt(176, 159),
+	})
+	if err != nil {
+		panic(err)
+	}
+	points := make([]geometry.Vec2, len(data.Points))
+	for i, point := range data.Points {
+		points[i] = geometry.Vec2{X: float64(point.X), Y: float64(point.Y)}
+	}
+	c.queue, err = sprites.NewDepthQueue(sprites.DepthQueueConfig{Points: points, Depth: 3250,
+		Near: 3225, Far: 3250, Spacing: 25, UpperPolicy: sprites.QueueUpperInclusiveFirst,
+		Project: c.projectBall,
+	})
+	if err != nil {
+		panic(err)
+	}
+	return c
+}
+
+// projectBall binds the sixteen authored sphere sizes and their original
+// visibility rules to the queue's reusable word projection and draw population.
+func (c *contactClock) projectBall(slot int, point geometry.Vec2, depth int) (sprites.FieldSample, bool) {
+	diameter := min(15, 8192/(depth+1)) + 1
+	word := motion.WrappedPoint{X: int16(point.X), Y: int16(point.Y), Z: int16(depth)}
+	p, projected := c.projection.Project(word, [3]int16{c.offset[0], c.offset[1], 0})
+	x := int16((uint16(word.X)+uint16(c.offset[0]))&1023) - 512
+	y := int16((uint16(word.Y)+uint16(c.offset[1]))&1023) - 512
+	py := p.Y + (16-diameter)/2
+	pose := contactPose{x: p.X, y: py - 26, frame: 16 - diameter, height: diameter,
+		visible: projected && x != 0 && y != 0 && p.X >= 0 && p.X < 336 && py >= 0 && py < 302}
+	c.poses[slot] = pose
+	return sprites.FieldSample{X: float64(pose.x), Y: float64(pose.y), Z: float64(depth),
+		Image: pose.frame, Scale: 1}, pose.visible
 }
 
 func (c *contactClock) Step() bool {
@@ -60,60 +110,27 @@ func (c *contactClock) Step() bool {
 			c.angles[i] += 720
 		}
 	}
-	velocity := contactVelocity(c.angles, c.data.Sines)
+	velocity, ok := c.velocity.Sample(c.angles)
+	if !ok {
+		panic("demo: invalid contact velocity phase")
+	}
 	c.offset[0] = int16(uint16(c.offset[0]) + uint16(velocity[0]))
 	c.offset[1] = int16(uint16(c.offset[1]) + uint16(velocity[1]))
-	c.depth -= int(velocity[2])
-	for c.depth < 3225 {
-		c.depth += 25
-		c.head--
+	if err := c.queue.Step(-int(velocity[2])); err != nil {
+		panic(err)
 	}
-	// The first upper-bound comparison includes equality; the inner loop does
-	// not. Keeping that distinction preserves the original sphere queue phase.
-	if c.depth >= 3250 {
-		c.depth -= 25
-		c.head++
-		for c.depth > 3250 {
-			c.depth -= 25
-			c.head++
-		}
-	}
-	c.head = (c.head%130 + 130) % 130
-	for i := range c.poses {
-		point := c.data.Points[(c.head+i)%130]
-		depth := c.depth - i*25
-		diameter := min(15, 8192/(depth+1)) + 1
-		factor := int32(263680 / (depth + 90))
-		x := int32(int16((uint16(point.X)+uint16(c.offset[0]))&1023) - 512)
-		y := int32(int16((uint16(point.Y)+uint16(c.offset[1]))&1023) - 512)
-		px, py := int(int16(x*factor>>9))+176, int(int16(y*factor>>9))+(16-diameter)/2+159
-		c.poses[i] = contactPose{x: px, y: py - 26, frame: 16 - diameter, height: diameter,
-			visible: x != 0 && y != 0 && px >= 0 && px < 336 && py >= 0 && py < 302}
-	}
+	c.head, c.depth = c.queue.Head(), c.queue.Depth()
 	return true
 }
 
 func contactVelocity(angles [3]int16, sines []int16) [3]int16 {
-	var wave [6]int16
-	for i, a := range angles {
-		index := int(uint16(a)&0xfffe) / 2
-		// The source can produce the guard offset -1 on an odd phase step.
-		// Its high lookup lands in the cleared screen-buffer guard area.
-		if index < len(sines) {
-			wave[i*2] = sines[index]
-		}
-		cos := uint16(a) + 180
-		if int16(cos) > 718 {
-			cos -= 720
-		} else if int16(cos) < 0 {
-			cos += 720
-		}
-		wave[i*2+1] = sines[int(cos&0xfffe)/2]
+	velocity, err := motion.NewWordEulerVelocity(motion.WordEulerVelocityConfig{Sines: sines, Period: 720, Quantum: 2, Quarter: 180, OutputShift: [3]uint8{10, 10, 8}, PhasePolicy: motion.WordPhaseGuarded})
+	if err != nil {
+		panic(err)
 	}
-	sx, cx, sy, cy, sz, cz := wave[0], wave[1], wave[2], wave[3], wave[4], wave[5]
-	mul := func(a, b int16) int32 { return int32(a) * int32(b) }
-	high := func(v int32) int16 { return int16(v >> 16) }
-	return [3]int16{int16(int32(high(mul(cx, cy))) >> 10),
-		int16(int32(high(mul(sx, cz)-mul(high(mul(sz, sy)<<1), cx))) >> 10),
-		int16(int32(high(mul(sx, sz)+mul(high(mul(cz, sy)<<1), cx))) >> 8)}
+	v, ok := velocity.Sample(angles)
+	if !ok {
+		panic("demo: invalid contact velocity phase")
+	}
+	return v
 }
