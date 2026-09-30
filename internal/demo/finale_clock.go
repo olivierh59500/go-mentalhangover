@@ -1,6 +1,9 @@
 package demo
 
-import "github.com/olivierh59500/go-mentalhangover/internal/source"
+import (
+	"github.com/olivierh59500/democonstructionkit/motion"
+	"github.com/olivierh59500/go-mentalhangover/internal/source"
+)
 
 type finalBall struct {
 	x, y, size, material int
@@ -13,12 +16,31 @@ type finaleClock struct {
 	particles                      [24][4]byte
 	poses                          [24]finalBall
 	logoLevel, reveal              int
+	queue                          *motion.RecycledQueue[[4]byte, finalBall]
 }
 
 func newFinaleClock(data source.FinaleData) *finaleClock {
 	c := &finaleClock{data: data, tick: -1, ballCount: 1, reveal: 1}
-	copy(c.particles[:], data.Particles)
+	items := make([][4]byte, len(c.particles))
+	copy(items, data.Particles)
+	var err error
+	c.queue, err = motion.NewRecycledQueue(motion.RecycledQueueConfig[[4]byte, finalBall]{Items: items, Count: 1, Depth: 0, Step: 28, Spacing: 100, DepthWrap: 2400, Grow: true,
+		Recycle: func(tick int, p *[4]byte) { p[0] = 0; p[2] = byte(tick*73 + 19) }, Project: c.projectBall,
+	})
+	if err != nil {
+		panic(err)
+	}
+	copy(c.particles[:], c.queue.Items())
 	return c
+}
+func (c *finaleClock) projectBall(_ int, depth int, p *[4]byte) (finalBall, error) {
+	phase := p[0]
+	p[0] += byte(p[1]&3) + 5
+	denominator := 2560 - depth
+	size := min(32, 10240/(denominator-100))
+	y := (140 - int(c.data.Bounce[phase])) * 512 / denominator
+	x := int(int8(p[2]))*1024/denominator + 192
+	return finalBall{x: x - 32, y: y - size/2 + 138, size: size, material: int(p[3]), visible: y < 155 && x < 368 && x > 16 && size >= 3}, nil
 }
 
 func (c *finaleClock) Step() {
@@ -40,36 +62,12 @@ func (c *finaleClock) Step() {
 	if c.tick < 365 {
 		return
 	}
-	c.depth += 28
-	if c.depth > 100 {
-		c.depth -= 100
-		c.ballCount = min(24, c.ballCount+1)
-		last := c.particles[23]
-		copy(c.particles[1:], c.particles[:23])
-		c.particles[0] = last
-		// The original mixes horizontal beam time into the new ball's X seed.
-		// A fixed replay seed keeps captures and native playback reproducible.
-		seed := byte(c.tick*73 + 19)
-		c.particles[0][0] = 0
-		c.particles[0][2] = seed
+	if err := c.queue.Step(c.tick); err != nil {
+		panic(err)
 	}
-	depth := c.depth
-	for i := 0; i < c.ballCount; i++ {
-		if depth > 2400 {
-			depth -= 2400
-		}
-		p := &c.particles[i]
-		phase := p[0]
-		p[0] += byte(p[1]&3) + 5
-		denominator := 2560 - depth
-		// The size table looks one queue interval ahead; the bounce lookup
-		// consumes the old phase before advancing the particle's byte clock.
-		size := min(32, 10240/(denominator-100))
-		y := (140 - int(c.data.Bounce[phase])) * 512 / denominator
-		x := int(int8(p[2]))*1024/denominator + 192
-		c.poses[i] = finalBall{x: x - 32, y: y - size/2 + 138, size: size, material: int(p[3]), visible: y < 155 && x < 368 && x > 16 && size >= 3}
-		depth += 100
-	}
+	c.depth, c.ballCount = c.queue.Depth(), c.queue.Count()
+	copy(c.particles[:], c.queue.Items())
+	copy(c.poses[:], c.queue.Poses())
 }
 
 func (c *finaleClock) rowColors(y int) (uint16, uint16) {

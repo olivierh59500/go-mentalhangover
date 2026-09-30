@@ -60,7 +60,7 @@ func newBOBEffect(data []byte) (*bobEffect, error) {
 		effect.Close()
 		return nil, err
 	}
-	effect.text, err = scrolling.New(scrolling.Config{Text: decoded.Text, Fonts: map[string]scrolling.Face{"default": {Atlas: effect.fontImage, Metrics: metrics}}})
+	effect.text, err = scrolling.New(scrolling.Config{Insertion: &scrolling.InsertionConfig{Controller: effect.clock.program, ExternalClock: true, Y: 15, Fonts: map[string]scrolling.Face{"default": {Atlas: effect.fontImage, Metrics: metrics}}}})
 	if err != nil {
 		effect.Close()
 		return nil, err
@@ -87,14 +87,7 @@ func (e *bobEffect) Draw(dst *ebiten.Image) {
 		return
 	}
 	c := e.clock
-	state := scrolling.IdentityState()
-	state.First, state.End = c.first, c.fetched
-	state.Y = 15
-	state.Map = func(sample scrolling.Sample, options *ebiten.DrawImageOptions) bool {
-		options.GeoM.Translate(float64(c.origins[sample.Index]-c.distance)-sample.X, 0)
-		return true
-	}
-	e.text.DrawAt(dst, state)
+	e.text.Draw(dst)
 	if c.depth == 4100 || c.count == 0 {
 		return
 	}

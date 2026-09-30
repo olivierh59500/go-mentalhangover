@@ -8,6 +8,7 @@ import (
 	kit "github.com/olivierh59500/democonstructionkit"
 	"github.com/olivierh59500/democonstructionkit/composite"
 	"github.com/olivierh59500/democonstructionkit/render"
+	"github.com/olivierh59500/democonstructionkit/sprites"
 	"github.com/olivierh59500/go-mentalhangover/internal/source"
 )
 
@@ -16,7 +17,7 @@ type finaleEffect struct {
 	logo, logoLayer, columns *ebiten.Image
 	floor                    *composite.PaletteGrid
 	balls                    []*ebiten.Image
-	batch                    *render.Batch
+	slots                    *sprites.ImageSlots
 	palette                  *copperPalette
 	colors                   [2][]color.NRGBA
 }
@@ -37,10 +38,15 @@ func newFinale(data source.FinaleData, palette *copperPalette) (*finaleEffect, e
 		}
 	}
 	e := &finaleEffect{clock: newFinaleClock(data), logo: ebiten.NewImageFromImage(data.Logo), logoLayer: render.NewSurface(Width, Height),
-		columns: ebiten.NewImageFromImage(mask), floor: floor, batch: render.NewBatch(256), palette: palette,
+		columns: ebiten.NewImageFromImage(mask), floor: floor, palette: palette,
 		colors: [2][]color.NRGBA{make([]color.NRGBA, Height), make([]color.NRGBA, Height)}}
 	for _, ball := range data.Balls {
 		e.balls = append(e.balls, ebiten.NewImageFromImage(ball))
+	}
+	e.slots, err = sprites.NewImageSlots(sprites.ImageSlotsConfig{Images: e.balls, MaxSlots: 24, Select: e.selectBalls})
+	if err != nil {
+		e.Close()
+		return nil, err
 	}
 	var op ebiten.DrawImageOptions
 	op.GeoM.Translate(16, 14)
@@ -48,7 +54,7 @@ func newFinale(data source.FinaleData, palette *copperPalette) (*finaleEffect, e
 	return e, nil
 }
 
-func (e *finaleEffect) Update(kit.Frame) error {
+func (e *finaleEffect) Update(f kit.Frame) error {
 	e.clock.Step()
 	c := e.clock
 	clear(e.colors[0])
@@ -63,28 +69,37 @@ func (e *finaleEffect) Update(kit.Frame) error {
 	}
 	// Only a two-color row bank changes. The original column mask stays on the
 	// GPU, avoiding a full-screen CPU raster and upload on every PAL update.
-	return e.floor.SetColors(e.colors[0], e.colors[1])
+	if err := e.floor.SetColors(e.colors[0], e.colors[1]); err != nil {
+		return err
+	}
+	return e.slots.Update(f)
 }
 
 func (e *finaleEffect) Draw(dst *ebiten.Image) {
 	c := e.clock
 	e.palette.Draw(dst, e.logoLayer, source.PaletteScaled64, c.logoLevel)
 	e.drawFloor(dst)
-	// The source shifts its 24-entry depth queue; near balls draw last.
+	e.slots.Draw(dst)
+}
+
+// selectBalls supplies the authored crop and lower border; DCK owns the slot
+// window, sprite ordering, texture switches and triangle submission.
+func (e *finaleEffect) selectBalls(_ kit.Frame, slots []sprites.ImageSlot) (int, error) {
+	c := e.clock
 	for i := 0; i < c.ballCount; i++ {
 		p := c.poses[i]
-		if !p.visible || p.material >= len(e.balls) {
+		h := min(p.size, 278-p.y)
+		slots[i] = sprites.ImageSlot{Hidden: !p.visible || p.material >= len(e.balls) || h <= 0}
+		if slots[i].Hidden {
 			continue
 		}
-		xOffset := (32 - p.size) * 32
-		e.batch.Begin(dst, e.balls[p.material])
-		height := min(p.size, 278-p.y)
-		if height <= 0 {
-			continue
-		}
-		e.batch.Rect(float64(p.x), float64(p.y), 32, float64(height), image.Rect(xOffset, 0, xOffset+32, height), color.White)
-		e.batch.Flush()
+		x := (32 - p.size) * 32
+		slots[i].Image = p.material
+		slots[i].X, slots[i].Y = float64(p.x), float64(p.y)
+		slots[i].Width, slots[i].Height = 32, float64(h)
+		slots[i].Source = image.Rect(x, 0, x+32, h)
 	}
+	return c.ballCount, nil
 }
 
 func (e *finaleEffect) drawFloor(dst *ebiten.Image) {
@@ -94,6 +109,9 @@ func (e *finaleEffect) drawFloor(dst *ebiten.Image) {
 }
 
 func (e *finaleEffect) Close() {
+	if e.slots != nil {
+		e.slots.Close()
+	}
 	for _, img := range append(e.balls, e.logo, e.logoLayer, e.columns) {
 		img.Deallocate()
 	}

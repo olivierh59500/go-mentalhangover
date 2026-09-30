@@ -1,7 +1,7 @@
 # Mental Hangover Go
 
 Native Go/Ebitengine conversion of the supplied Amiga Mental Hangover
-production, using **Demo Construction Kit v1.0.12** and production-specific code.
+production, using **Demo Construction Kit v1.0.13** and production-specific code.
 
 ## Overview
 
@@ -76,6 +76,15 @@ The intro supplies original sine/model banks, precise scaling/overflow choices,
 palette recipes and choreography. Shared `WordProgram` advances their cue words.
 All 152 original projection poses and the full 699-frame sample set match.
 The local per-point and per-face loops and unused BOB clipper were removed.
+
+The BOB message now uses `scrolltext.InsertionProgram` and
+`scrolling.InsertionConfig`: glyph fetch, original advances, aligned entry,
+retirement, speed ramps and pauses belong to DCK. Binary command meanings still
+select this production's objects and camera. The finale population uses
+`motion.RecycledQueue`; `sprites.ImageSlots` owns ordered crops and submission.
+Original byte phases, bounce tables, size strips and floor colors are retained.
+All native controller fixtures pass, and 699 complete-frame fingerprints remain
+identical across 24,001 drawn updates after this integration.
 
 The published 1.0.12 ARM64 package passed ELF/ZIP 16 KiB alignment and ran its
 changed object families on Pixel 10a from a muted checkpoint. Samples measured

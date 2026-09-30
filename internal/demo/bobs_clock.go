@@ -1,6 +1,9 @@
 package demo
 
-import "github.com/olivierh59500/go-mentalhangover/internal/source"
+import (
+	"github.com/olivierh59500/democonstructionkit/scrolltext"
+	"github.com/olivierh59500/go-mentalhangover/internal/source"
+)
 
 // bobClock retains the source's look-ahead insertion and binary controls. The
 // text, copies, rotation and camera have independent clocks during text pauses.
@@ -13,68 +16,67 @@ type bobClock struct {
 	phaseX, phaseY, stepX, stepY, gapX, gapY               int16
 	angles, rotation                                       [3]int16
 	depth, target                                          int16
+	program                                                *scrolltext.InsertionProgram
 	done                                                   bool
 }
 
 func newBOBClock(data source.BOBData) *bobClock {
-	return &bobClock{data: data, speed: 4, targetSpeed: 4, depth: 4100, target: 4100, origins: make([]int, len([]rune(data.Text)))}
+	c := &bobClock{data: data, speed: 4, targetSpeed: 4, depth: 4100, target: 4100}
+	tokens := make([]scrolltext.InsertionToken, len(data.Tokens))
+	for i, t := range data.Tokens {
+		tokens[i] = scrolltext.InsertionToken{Command: t.Kind, Payload: t.Values[:]}
+		if t.Kind == 't' {
+			tokens[i].Glyph = true
+			tokens[i].Rune = t.Letter
+			tokens[i].Advance = data.Advances[int(t.Letter)-32]
+		}
+	}
+	var err error
+	c.program, err = scrolltext.NewInsertionProgram(scrolltext.InsertionProgramConfig{Tokens: tokens, Speed: 4, TargetSpeed: 4, SpeedStep: 1, Divisor: 2, Entry: 368, AlignBias: 14, AlignMask: 15, RetireBefore: -16, OnCommand: c.command})
+	if err != nil {
+		panic(err)
+	}
+	c.origins = c.program.State().Origins
+	return c
+}
+func (c *bobClock) command(p *scrolltext.InsertionProgram, t scrolltext.InsertionToken) error {
+	switch t.Command {
+	case '>':
+		return p.SetTargetSpeed(int(t.Payload[0]) * 2)
+	case '|':
+		return p.SetPause(int(t.Payload[0]) * 50)
+	case 'a':
+		c.target = 1100
+	case 'd':
+		c.target = 4100
+	case 'b':
+		v := t.Payload
+		c.count, c.model = int(v[0]), int(v[13])
+		c.stepX, c.stepY = int16(int8(v[1]))*8, int16(int8(v[2]))*4
+		c.gapX, c.gapY = int16(int8(v[3]))*8, int16(int8(v[4]))*4
+		c.phaseX, c.phaseY = int16(v[5]>>3), int16(v[6])*4
+		for i := 0; i < 3; i++ {
+			c.rotation[i] = int16(int8(v[i+7])) * 2
+			c.angles[i] = int16(int8(v[i+10])) * 2
+		}
+	}
+	return nil
 }
 
 func (c *bobClock) Step() bool {
 	if c.done {
 		return false
 	}
-	if c.pause > 0 {
-		c.pause--
-	} else {
-		c.remaining -= c.speed / 2
-		if c.remaining < 0 {
-			inserted := false
-			for c.cursor < len(c.data.Tokens) && !inserted {
-				token := c.data.Tokens[c.cursor]
-				c.cursor++
-				switch token.Kind {
-				case '>':
-					c.targetSpeed = int(token.Values[0]) * 2
-				case '|':
-					c.pause = int(token.Values[0]) * 50
-				case 'a':
-					c.target = 1100
-				case 'd':
-					c.target = 4100
-				case 'b':
-					v := token.Values
-					c.count, c.model = int(v[0]), int(v[13])
-					c.stepX, c.stepY = int16(int8(v[1]))*8, int16(int8(v[2]))*4
-					c.gapX, c.gapY = int16(int8(v[3]))*8, int16(int8(v[4]))*4
-					c.phaseX, c.phaseY = int16(v[5]>>3), int16(v[6])*4
-					for i := 0; i < 3; i++ {
-						c.rotation[i] = int16(int8(v[i+7])) * 2
-						c.angles[i] = int16(int8(v[i+10])) * 2
-					}
-				case 't':
-					// Only the first three masked words of the source glyph blit
-					// participate; the insertion is ahead of the visible viewport.
-					c.origins[c.fetched] = c.distance + 368 + ((c.remaining + 14) & 15)
-					c.fetched++
-					c.remaining += c.data.Advances[int(token.Letter)-32]
-					inserted = true
-				}
-			}
-			if !inserted {
-				c.done = true
-				return false
-			}
-		}
-		c.distance += c.speed / 2
-		if c.speed < c.targetSpeed {
-			c.speed++
-		} else if c.speed > c.targetSpeed {
-			c.speed--
-		}
+	active, err := c.program.Step()
+	if err != nil {
+		panic(err)
 	}
-	for c.first < c.fetched && c.origins[c.first]-c.distance < -16 {
-		c.first++
+	s := c.program.State()
+	c.cursor, c.remaining, c.speed, c.targetSpeed, c.pause, c.distance = s.Cursor, s.Remaining, s.Speed, s.TargetSpeed, s.Pause, s.Distance
+	c.first, c.fetched = s.First, s.Fetched
+	c.done = s.Finished
+	if !active {
+		return false
 	}
 	for i, delta := range c.rotation {
 		c.angles[i] = int16(uint16(c.angles[i]) + uint16(delta))
