@@ -12,7 +12,10 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	kit "github.com/olivierh59500/democonstructionkit"
+	"github.com/olivierh59500/democonstructionkit/effects"
 	"github.com/olivierh59500/democonstructionkit/fidelity/ebiten/testutil"
+	"github.com/olivierh59500/democonstructionkit/geometry"
+	"github.com/olivierh59500/democonstructionkit/motion"
 	"github.com/olivierh59500/go-mentalhangover/assets"
 	"github.com/olivierh59500/go-mentalhangover/internal/source"
 )
@@ -105,14 +108,27 @@ func TestVectorBatchUsesOneEvenOddFillForConcaveContoursAndHoles(t *testing.T) {
 		Contours: []source.Contour{{Material: 1, Indices: []int{0, 1, 2, 3, 4, 5, 0}},
 			{Material: 1, Indices: []int{6, 7, 8, 9, 6}}},
 		Cues: []source.VectorCue{{Frames: 1}}}
-	effect, err := newVectorEffect(model, make([]int16, 2048))
+	bank := effects.WordMeshModel{Points: make([]motion.WrappedPoint, len(model.Points)), Faces: []effects.WordFace{{Contours: make([][]int, len(model.Contours))}}}
+	for i, p := range model.Points {
+		bank.Points[i] = motion.WrappedPoint{X: p.X, Y: p.Y}
+	}
+	for i, c := range model.Contours {
+		bank.Faces[0].Contours[i] = c.Indices
+	}
+	matrix, err := motion.NewWordEulerMatrix(motion.WordEulerMatrixConfig{Sines: []int16{0, 32767, 0, -32767}, Period: 4, Quantum: 1, Quarter: 1, ProductShift: 6, ThirdAxisShift: 7})
+	if err != nil {
+		t.Fatal(err)
+	}
+	effect, err := effects.NewWordMesh(effects.WordMeshConfig{Models: []effects.WordMeshModel{bank}, Matrix: matrix, Projection: geometry.WordProjectionConfig{DepthShift: 9}, FillRule: ebiten.FillRuleEvenOdd, Color: func(kit.Frame) color.NRGBA { return color.NRGBA{B: 255, A: 255} }})
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer effect.Close()
-	copy(effect.points, model.Points)
-	effect.color = color.NRGBA{B: 255, A: 255}
-	effect.ready = true
+	// At zero rotation the fixed-point diagonal is255, so depth255 preserves
+	// every supplied coordinate exactly. The independent pixel oracle stays below.
+	if err := effect.SetPose(effects.WordMeshPose{Depth: 255, Visible: true}); err != nil {
+		t.Fatal(err)
+	}
 	dst := ebiten.NewImage(24, 24)
 	defer dst.Deallocate()
 	effect.Draw(dst)
@@ -318,7 +334,7 @@ func TestActualStencilEffectsHoldHalfRatePosesAndDrawWithoutMutation(t *testing.
 			t.Fatal(err)
 		}
 		pose := e.clock.state
-		points := append([]source.Point2(nil), e.points...)
+		points := append([]geometry.WordScreenPoint(nil), e.mesh.ProjectedPoints()...)
 		dst.Clear()
 		e.Draw(dst)
 		a := make([]byte, Width*Height*4)
@@ -330,7 +346,7 @@ func TestActualStencilEffectsHoldHalfRatePosesAndDrawWithoutMutation(t *testing.
 			t.Fatal("25 Hz stencil pose changed on an intervening PAL frame")
 		}
 		for j, p := range points {
-			if e.points[j] != p {
+			if e.mesh.ProjectedPoints()[j] != p {
 				t.Fatal("held stencil projection changed")
 			}
 		}

@@ -1,39 +1,48 @@
 package demo
 
 import (
-	"image"
-	"image/color"
-
 	"github.com/hajimehoshi/ebiten/v2"
 	kit "github.com/olivierh59500/democonstructionkit"
-	"github.com/olivierh59500/democonstructionkit/render"
+	"github.com/olivierh59500/democonstructionkit/effects"
+	"github.com/olivierh59500/democonstructionkit/geometry"
+	"github.com/olivierh59500/democonstructionkit/motion"
 	"github.com/olivierh59500/go-mentalhangover/internal/source"
+	"image"
 )
 
 type patternedEffect struct {
 	data     source.PatternedSolid
 	clock    *vectorClock
 	textures []*ebiten.Image
-	points   []source.Point2
-	batch    *render.Batch
+	mesh     *effects.WordMesh
 	frame    int
 	ready    bool
 }
 
 func newPatterned(data source.PatternedSolid) *patternedEffect {
-	e := &patternedEffect{data: data, clock: newVectorClock(source.VectorModel{Initial: data.Initial, Cues: data.Cues}),
-		points: make([]source.Point2, len(data.Points)), batch: render.NewBatch(256)}
-	e.batch.Options.FillRule = ebiten.FillRuleEvenOdd
-	e.batch.Options.Address = ebiten.AddressRepeat
+	e := &patternedEffect{data: data, clock: newVectorClock(source.VectorModel{Initial: data.Initial, Cues: data.Cues})}
+	m := effects.WordMeshModel{Points: make([]motion.WrappedPoint, len(data.Points)), Faces: make([]effects.WordFace, len(data.Faces))}
+	for i, p := range data.Points {
+		m.Points[i] = motion.WrappedPoint{X: p.X, Y: p.Y, Z: p.Z}
+	}
+	for i, face := range data.Faces {
+		m.Faces[i] = effects.WordFace{Contours: face.Contours, Material: int(face.Material), Texture: int(face.Material) - 1}
+	}
 	for _, texture := range data.Textures {
 		e.textures = append(e.textures, ebiten.NewImageFromImage(texture))
 	}
-	// Source pixels are now retained on the GPU; only choreography stays in Go.
 	e.data.Textures = nil
+	var err error
+	e.mesh, err = effects.NewWordMesh(effects.WordMeshConfig{Models: []effects.WordMeshModel{m}, Matrix: compiledWordMatrix(data.Sines, true, true), Projection: wordProjection([2]int16{256, 100}, 7, 512), Textures: e.textures, CullBackFaces: true, PerFaceBatch: true, FillRule: ebiten.FillRuleEvenOdd, Address: ebiten.AddressRepeat, BatchTriangles: 256, Offset: geometry.Vec2{X: -80, Y: 27}, DestinationClip: image.Rect(0, 30, Width, 227), UV: func(s effects.WordMaterialSample) geometry.Vec2 {
+		return geometry.Vec2{X: s.Point.X - s.Center.X + 128, Y: s.Point.Y - s.Center.Y + 128}
+	}})
+	if err != nil {
+		e.Close()
+		panic(err)
+	}
 	return e
 }
-
-func (e *patternedEffect) Update(kit.Frame) error {
+func (e *patternedEffect) Update(f kit.Frame) error {
 	advance := e.frame%e.data.Period == 0
 	e.frame++
 	if !advance {
@@ -44,58 +53,33 @@ func (e *patternedEffect) Update(kit.Frame) error {
 		return nil
 	}
 	for i := 0; i < 3; i++ {
-		angle := e.clock.state[i]
-		if angle > 718 {
-			angle -= 720
-		} else if angle < 0 {
-			angle += 720
+		a := e.clock.state[i]
+		if a > 718 {
+			a -= 720
+		} else if a < 0 {
+			a += 720
 		}
-		e.clock.state[i] = angle
+		e.clock.state[i] = a
 	}
 	s := e.clock.state
-	return projectPatterned(e.data.Points, patternedMatrix([3]int16{s[0], s[1], s[2]}, e.data.Sines), s, e.points)
+	if err := e.mesh.Update(f); err != nil {
+		return err
+	}
+	return e.mesh.SetPose(effects.WordMeshPose{Angles: [3]int16{s[0], s[1], s[2]}, Translation: [2]int16{s[3], s[4]}, Depth: s[5], Visible: true})
 }
-
 func (e *patternedEffect) Level() int {
 	depth := max(548, min(2590, int(e.clock.state[5])))
 	return 127 - ((depth-548)&0xff0)/16
 }
-
 func (e *patternedEffect) Draw(dst *ebiten.Image) {
-	if !e.ready {
-		return
-	}
-	view := dst.SubImage(image.Rect(0, 30, Width, 227)).(*ebiten.Image)
-	for _, face := range e.data.Faces {
-		indices := face.Contours[0]
-		a, b, c := e.points[indices[0]], e.points[indices[1]], e.points[indices[2]]
-		if int32(b.X-a.X)*int32(c.Y-a.Y)-int32(b.Y-a.Y)*int32(c.X-a.X) < 0 {
-			continue
-		}
-		minX, minY, maxX, maxY := 32767, 32767, -32768, -32768
-		for _, contour := range face.Contours {
-			for _, index := range contour {
-				p := e.points[index]
-				minX = min(minX, int(p.X))
-				maxX = max(maxX, int(p.X))
-				minY = min(minY, int(p.Y))
-				maxY = max(maxY, int(p.Y))
-			}
-		}
-		centerX, centerY := minX+(maxX-minX)/2, minY+(maxY-minY)/2
-		vertex := func(p source.Point2) ebiten.Vertex {
-			return render.Vertex(float64(p.X)-80, float64(p.Y)+27,
-				float64(int(p.X)-centerX+128), float64(int(p.Y)-centerY+128), color.White)
-		}
-		e.batch.Begin(view, e.textures[int(face.Material)-1])
-		for _, contour := range face.Contours {
-			e.batch.Fan(len(contour)-1, func(i int) ebiten.Vertex { return vertex(e.points[contour[i]]) })
-		}
-		e.batch.Flush()
+	if e.ready {
+		e.mesh.Draw(dst)
 	}
 }
-
 func (e *patternedEffect) Close() {
+	if e.mesh != nil {
+		e.mesh.Close()
+	}
 	for _, texture := range e.textures {
 		texture.Deallocate()
 	}

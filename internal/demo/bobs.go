@@ -2,12 +2,12 @@ package demo
 
 import (
 	"image"
-	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	kit "github.com/olivierh59500/democonstructionkit"
+	"github.com/olivierh59500/democonstructionkit/effects"
 	"github.com/olivierh59500/democonstructionkit/font"
-	"github.com/olivierh59500/democonstructionkit/render"
+	"github.com/olivierh59500/democonstructionkit/geometry"
 	"github.com/olivierh59500/democonstructionkit/scrolling"
 	"github.com/olivierh59500/go-mentalhangover/internal/source"
 )
@@ -17,12 +17,10 @@ import (
 type bobEffect struct {
 	clock              *bobClock
 	models             []source.SolidModel
-	points             []source.Point2
 	fontImage, palette *ebiten.Image
 	text               *scrolling.Scrolling
-	batch              *render.Batch
+	mesh               *effects.WordMesh
 	ready              bool
-	faces              []clippedFace
 }
 
 func newBOBEffect(data []byte) (*bobEffect, error) {
@@ -34,10 +32,24 @@ func newBOBEffect(data []byte) (*bobEffect, error) {
 	if err != nil {
 		return nil, err
 	}
-	effect := &bobEffect{clock: newBOBClock(decoded), models: models, points: make([]source.Point2, 8), batch: render.NewBatch(1024)}
-	effect.faces = make([]clippedFace, 0, 6)
+	effect := &bobEffect{clock: newBOBClock(decoded), models: models}
 	effect.fontImage = ebiten.NewImageFromImage(decoded.Font)
 	effect.palette = ebiten.NewImageFromImage(decoded.Palette)
+	wordModels := make([]effects.WordMeshModel, len(models))
+	for i, m := range models {
+		wordModels[i] = wordSolidModel(m)
+	}
+	effect.mesh, err = effects.NewWordMesh(effects.WordMeshConfig{Models: wordModels, Matrix: compiledWordMatrix(decoded.Sines, true, false), Projection: wordProjection([2]int16{15, 14}, 0, 0), Textures: []*ebiten.Image{effect.palette}, CullBackFaces: true, FaceClip: &[4]float64{0, 0, 48, 32}, ClipVertexLimit: 10, BatchTriangles: 1024, MaxInstances: 256, Instance: func(index int, _ kit.Frame) effects.WordMeshInstance {
+		x, y := effect.clock.Offset(index)
+		return effects.WordMeshInstance{Offset: geometry.Vec2{X: float64(x), Y: float64(y)}}
+	}, UV: func(s effects.WordMaterialSample) geometry.Vec2 {
+		return geometry.Vec2{X: float64(s.Material) - .5, Y: s.Screen.Y}
+	}})
+	if err != nil {
+		effect.Close()
+		return nil, err
+	}
+
 	glyphs := make(map[rune]font.Glyph, 59)
 	for i, advance := range decoded.Advances {
 		glyphs[rune(i+32)] = font.Glyph{Rect: image.Rect(i*16, 0, i*16+16, 14), Advance: float64(advance)}
@@ -56,33 +68,18 @@ func newBOBEffect(data []byte) (*bobEffect, error) {
 	return effect, nil
 }
 
-func (e *bobEffect) Update(kit.Frame) error {
+func (e *bobEffect) Update(f kit.Frame) error {
 	e.ready = e.clock.Step()
 	if !e.ready || e.clock.depth == 4100 {
 		return nil
 	}
-	model := e.models[e.clock.model]
-	if err := projectBOB(model.Points, solidMatrix(e.clock.angles, e.clock.data.Sines), e.clock.depth, e.points[:len(model.Points)]); err != nil {
+	if err := e.mesh.Update(f); err != nil {
 		return err
 	}
-	e.faces = e.faces[:0]
-	for _, face := range model.Faces {
-		a, b, c := e.points[face.Vertices[0]], e.points[face.Vertices[1]], e.points[face.Vertices[2]]
-		if int32(b.X-a.X)*int32(c.Y-a.Y)-int32(b.Y-a.Y)*int32(c.X-a.X) < 0 {
-			continue
-		}
-		var points [8]polygonPoint
-		for i, index := range face.Vertices {
-			p := e.points[index]
-			points[i] = polygonPoint{float64(p.X), float64(p.Y)}
-		}
-		clipped := clipBOB(points[:len(face.Vertices)])
-		clipped.material = face.Material
-		if clipped.count >= 3 {
-			e.faces = append(e.faces, clipped)
-		}
+	if err := e.mesh.SetInstanceCount(e.clock.count); err != nil {
+		return err
 	}
-	return nil
+	return e.mesh.SetPose(effects.WordMeshPose{Model: e.clock.model, Angles: e.clock.angles, Depth: e.clock.depth, Visible: true})
 }
 
 func (e *bobEffect) Draw(dst *ebiten.Image) {
@@ -101,21 +98,13 @@ func (e *bobEffect) Draw(dst *ebiten.Image) {
 	if c.depth == 4100 || c.count == 0 {
 		return
 	}
-	e.batch.Begin(dst, e.palette)
-	for i := 0; i < c.count; i++ {
-		x, y := c.Offset(i)
-		for _, face := range e.faces {
-			vertex := func(point polygonPoint) ebiten.Vertex {
-				px, py := float64(x)+point.x, float64(y)+point.y
-				return render.Vertex(px, py, float64(face.material)-0.5, py, color.White)
-			}
-			e.batch.Fan(face.count, func(j int) ebiten.Vertex { return vertex(face.points[j]) })
-		}
-	}
-	e.batch.Flush()
+	e.mesh.Draw(dst)
 }
 
 func (e *bobEffect) Close() {
+	if e.mesh != nil {
+		e.mesh.Close()
+	}
 	if e.text != nil {
 		e.text.Close()
 	}

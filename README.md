@@ -1,7 +1,7 @@
 # Mental Hangover Go
 
 Native Go/Ebitengine conversion of the supplied Amiga Mental Hangover
-production, using **Demo Construction Kit v1.0.11** and production-specific code.
+production, using **Demo Construction Kit v1.0.12** and production-specific code.
 
 ## Overview
 
@@ -68,6 +68,14 @@ point. `motion.WordEulerVelocity` preserves both native steering policies.
 The contact spheres use `sprites.DepthQueue` and the common atlas renderer,
 retaining the original equality distinction at the upper depth boundary.
 All 699 complete-frame samples and the original point/queue fixtures match.
+
+Author vectors, BOB copies, large filled solids and the eight patterned objects
+use `effects.WordMesh`. DCK owns copied models, integer matrix/projection,
+projected winding, clipped face caches, material UV submission and instances.
+The intro supplies original sine/model banks, precise scaling/overflow choices,
+palette recipes and choreography. Shared `WordProgram` advances their cue words.
+All 152 original projection poses and the full 699-frame sample set match.
+The local per-point and per-face loops and unused BOB clipper were removed.
 
 The independent asset preview renders the original four-plane eagle, interleaved
 three-plane serif font and 135 original star headers through DCK. The stars
