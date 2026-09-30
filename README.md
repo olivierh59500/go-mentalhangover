@@ -1,7 +1,7 @@
 # Mental Hangover Go
 
 Native Go/Ebitengine conversion of the supplied Amiga Mental Hangover
-production, using **Demo Construction Kit v1.0.0** and production-specific code.
+production, using **Demo Construction Kit v1.0.2** and production-specific code.
 
 ## Overview
 
@@ -44,7 +44,7 @@ The late units also retain their independently verified sphere projections,
 perspective lookup, point-plane OR operations, depth queue and copper colors.
 The reminder stays visible through the final disk-transfer hold, and the ending
 begins at 430.72 seconds. Native captures cover the entire sequence; a complete
-Pixel run reached the indefinite ending with audio active and approximately
+earlier Pixel run reached the indefinite ending with audio active and approximately
 50 updates/s. This is a native reconstruction: GPU polygon edges and the
 deterministic final-ball seeds differ from cycle-accurate Amiga emulation.
 Detailed numeric evidence and measured audio differences are documented in
@@ -78,10 +78,20 @@ match an independent execution of the original 68000 matrix/projection code.
 The title's five-plane bitmap and palette are also decoded directly. These
 models are integrated into the director. [Numeric and rendering evidence](reference/VECTORS.md)
 
-The native GPU checks cover all 4,096 RGB12 colors through the six palette
-operations, all eleven text cards against independent integer pen placement,
+The native GPU checks cover all 4,096 RGB12 colors at all 293 mode/level samples
+through the six palette operations, all eleven text cards against independent
+integer pen placement,
 contour parity, and repeated draws without advancing the source
 clock or changing a vector pose.
+
+The six copper operations now use DCK's `composite.QuantizedColor`; the production
+supplies its grid, threshold, integer ratios and operation order. All 699 sampled
+full frames match the previous renderer across 24,001 drawn ticks and 41 units.
+The shared pass owns one shader without an additional image surface. Two native
+CPU submission runs per implementation measured mean draws of 37.82–38.63
+microseconds before and 38.27–39.70 after; those timings exclude GPU completion
+and readback. Reproduce frame fingerprints and optional submission timings with
+`go run ./cmd/checkframes -output captures/color-reuse.json -timing`.
 
 [Scene inventory](SCENES.md) · [Source manifest](reference/sources.json)
 

@@ -1,6 +1,6 @@
 # Mental Hangover on Android
 
-The mobile host runs the same Go renderer, embedded assets and DCK v1.0.0
+The mobile host runs the same Go renderer, embedded assets and DCK v1.0.2
 music facade as the desktop command. Its clock remains at the original 50 Hz.
 The fixed 352 by 272 scene is centered with its aspect ratio intact. Android
 provides landscape orientation, immersive display, screen-awake behavior and
@@ -20,6 +20,12 @@ and the committed Gradle 8.11.1 wrapper. It does not install analysis tools.
 The debug APK is `android/app/build/outputs/apk/debug/app-debug.apk`.
 Generated AARs, APKs, build/cache directories and machine-specific settings are
 excluded locally. The application ID is `com.olivierh.mentalhangover`.
+
+The 30 September 2026 ARM64 build embeds DCK v1.0.2 after the shared integer-color
+migration. Its four native ELF load segments and the APK library placement pass
+16 KiB alignment. Desktop checks cover 699 matching complete frames and all
+293 source mode/level combinations over 4,096 RGB12 colors. No Android device
+was connected for a new runtime check of this package.
 
 ## Device verification
 

@@ -2,52 +2,49 @@ package demo
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/olivierh59500/democonstructionkit/composite"
 	"github.com/olivierh59500/go-mentalhangover/internal/source"
 )
 
-// The source artwork contains opaque 12-bit palette colors and transparent
-// index zero. Copper transitions modify each nibble with integer truncation.
-const paletteShaderSource = `//kage:unit pixels
-package main
-var Mode float
-var Level float
-func Fragment(dst vec4, src vec2, color vec4) vec4 {
-    c := imageSrc0At(src)
-    if c.a < 0.5 { return vec4(0) }
-    target := floor(c.rgb * 15 + vec3(0.5))
-    value := target
-    if Mode == 1 { value = vec3(Level) }
-    if Mode == 2 { value = vec3(15) - floor((vec3(15) - target) * Level / 32) }
-    if Mode == 3 { value = floor(target * Level / 16) }
-    if Mode == 4 { value = floor(target * Level / 128) }
-    if Mode == 5 { value = floor(target * Level / 32) }
-    if Mode == 6 { value = floor(target * Level / 64) }
-    return vec4(value / 15, c.a)
+// Source operation order and integer divisors are authored parameters.
+var copperStates = [...]composite.QuantizedColorState{
+	{Mode: composite.QuantizedPassthrough},
+	{Mode: composite.QuantizedReplace},
+	{Mode: composite.QuantizedFromTarget, Target: [3]uint16{15, 15, 15}, Denominator: 32},
+	{Mode: composite.QuantizedScale, Denominator: 16},
+	{Mode: composite.QuantizedScale, Denominator: 128},
+	{Mode: composite.QuantizedScale, Denominator: 32},
+	{Mode: composite.QuantizedScale, Denominator: 64},
 }
-`
 
-type copperPalette struct {
-	shader   *ebiten.Shader
-	uniforms map[string]any
-}
+type copperPalette struct{ renderer *composite.QuantizedColor }
 
 func newCopperPalette() (*copperPalette, error) {
-	shader, err := ebiten.NewShader([]byte(paletteShaderSource))
+	renderer, err := composite.NewQuantizedColor(composite.QuantizedColorConfig{AlphaThreshold: 0.5})
 	if err != nil {
 		return nil, err
 	}
-	return &copperPalette{shader: shader, uniforms: map[string]any{"Mode": float32(0), "Level": float32(0)}}, nil
+	return &copperPalette{renderer: renderer}, nil
 }
 
 func (palette *copperPalette) Draw(dst, src *ebiten.Image, mode source.PaletteMode, level int) {
-	if mode == source.PaletteTarget {
-		dst.DrawImage(src, nil)
-		return
+	state := composite.QuantizedColorState{Mode: composite.QuantizedKeep}
+	if int(mode) < len(copperStates) {
+		state = copperStates[mode]
 	}
-	palette.uniforms["Mode"] = float32(mode)
-	palette.uniforms["Level"] = float32(level)
-	options := ebiten.DrawRectShaderOptions{Images: [4]*ebiten.Image{src}, Uniforms: palette.uniforms}
-	dst.DrawRectShader(src.Bounds().Dx(), src.Bounds().Dy(), palette.shader, &options)
+	if state.Mode == composite.QuantizedReplace {
+		value := uint16(max(0, min(15, level)))
+		state.Target = [3]uint16{value, value, value}
+	} else if state.Denominator != 0 {
+		limit := int(state.Denominator)
+		if mode == source.PaletteScaled128 {
+			limit--
+		}
+		state.Numerator = uint32(max(0, min(limit, level)))
+	}
+	if err := palette.renderer.Draw(dst, src, state); err != nil {
+		panic(err)
+	}
 }
 
-func (palette *copperPalette) Close() { palette.shader.Deallocate() }
+func (palette *copperPalette) Close() { palette.renderer.Close() }
