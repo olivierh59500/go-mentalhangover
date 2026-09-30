@@ -36,6 +36,12 @@ It retains all 699 published-module frame samples and the independent CPU floor
 raster checks. Its four native ELF load segments and APK library placement pass
 16 KiB alignment; the row-color image remains 2,176 bytes.
 
+This v1.0.8 package was installed on the Pixel 10a and completed its director
+through the checkerboard finale. Five-second samples measured 49.8–50.9 ticks/s,
+58.9–60.2 displayed frames/s and a peak Go heap of 60.9 MiB without an observed
+crash. Go heap excludes native/GPU memory; this is a runtime check rather than
+a new hardware visual-reference comparison.
+
 ## Device verification
 
 A verification launch can show the demo over a locked screen without
