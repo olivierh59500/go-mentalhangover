@@ -3,6 +3,33 @@
 Native Go/Ebitengine conversion of the supplied Amiga Mental Hangover
 production, using **Demo Construction Kit v1.0.13** and production-specific code.
 
+<!-- Project showcase -->
+## Screenshots
+
+[![Colored cubes and pyramids form a moving ring](docs/media/screenshot-1.png)](docs/media/screenshot-1.png)
+
+Colored cubes and pyramids form a moving ring.
+
+[![Twisting circular text over a mountain silhouette and rainbow raster](docs/media/screenshot-2.png)](docs/media/screenshot-2.png)
+
+Twisting circular text over a mountain silhouette and rainbow raster.
+
+[![Bouncing balls above a scrolling perspective checkerboard](docs/media/screenshot-3.png)](docs/media/screenshot-3.png)
+
+Bouncing balls above a scrolling perspective checkerboard.
+
+## Video
+
+[![Animated preview of Mental Hangover Go](docs/media/preview.gif)](https://github.com/olivierh59500/go-mentalhangover/raw/refs/heads/main/docs/media/preview.mp4)
+
+**[Watch or download the 24-second MP4 preview with sound](https://github.com/olivierh59500/go-mentalhangover/raw/refs/heads/main/docs/media/preview.mp4)**
+
+This short showcase combines selected passages from the Go production.
+
+The animated image is silent; the MP4 includes the soundtrack.
+
+<!-- End project showcase -->
+
 ## Overview
 
 The port follows the original 50 Hz PAL sequence. DCK composes the effects
